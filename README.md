@@ -35,6 +35,13 @@ CPU 런타임이면 충분하고, 기본 실행에는 API 키나 추가 패키�
 
 ## 내 컴퓨터에서 실행 (설치 불필요)
 
+**간단히 확인:** `dashboard/index.html`을 Chrome에서 직접 열어도 목표·작업 편집이 동작합니다.
+이 모드는 서버 없이 해당 브라우저 저장소에 저장하므로 다른 기기·사용자와 동기화되지 않습니다.
+브라우저 데이터 삭제나 파일 위치 변경에 대비해 백업 저장을 사용하세요.
+백업 파일은 Colab 대시보드의 백업 불러오기로 옮길 수 있습니다.
+
+**파일 저장 서버로 실행:**
+
 Python 3.10 이상에서 저장소 루트에서 실행합니다.
 
 ```sh
@@ -51,6 +58,7 @@ python -m dashboard.server
 ```sh
 python -m unittest discover -s tests -v
 node --check dashboard/app.js
+node --test tests/dashboard_frontend.test.cjs
 ```
 
 브라우저 코드는 `dashboard/app.js`, 화면 스타일은 `dashboard/index.html`에 있습니다.
