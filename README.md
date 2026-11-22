@@ -3,6 +3,15 @@
 의사결정, 실행, 자원관리, 기록을 연결하는 조직 운영 시스템입니다.
 현재는 설계 단계이며, 실행 가능한 통합 프로그램은 아직 없습니다.
 
+## Colab에서 바로 실행
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/phj9187/PM_system/blob/main/notebooks/PM_system.ipynb)
+
+위 버튼을 누르고 **런타임 → 모두 실행**을 선택하면 GitHub의 최신 `main`을 가져와 대시보드 전체·확대 보기 시안을 생성하고 표시합니다.
+CPU 런타임이면 충분하며 API 키나 추가 패키지는 필요하지 않습니다.
+현재는 정적 시안 실행용입니다. 업무 관리 서버와 AI 백엔드는 아직 포함되어 있지 않습니다.
+노트북 실행 출력은 저장소에 커밋하지 않습니다.
+
 ## 설계 범위
 
 | 영역 | 현재 방향 |
@@ -21,6 +30,7 @@ Colab은 개발·검증 환경이며, 상시 운영 환경은 별도로 결정�
 - `designs/01-overview.svg`: 전체 보기 예시
 - `designs/02-detail.svg`: 확대 보기 예시
 - `CONTRIBUTING.md`: 공동 개발 방식
+- `notebooks/PM_system.ipynb`: Colab에서 저장소 준비·시안 생성·미리보기
 
 화면의 이름·일정·수치는 예시이며 실제 팀 운영 정보가 아닙니다.
 
