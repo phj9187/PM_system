@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1020" viewBox="0 0 1440 1020">
+<rect x="0" y="0" width="1440" height="1020" rx="0" fill="#F5F7FA"/>
+<rect x="0" y="0" width="1440" height="68" rx="0" fill="#FFFFFF"/>
+<path d="M0 68 L1440 68" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<rect x="28" y="21" width="24" height="24" rx="7" fill="#218A7A"/>
+<text x="66" y="41" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="19" font-weight="700" fill="#1B303D">ROHANG</text>
+<text x="244" y="41" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="14" font-weight="700" fill="#366AF0">운영 대시보드</text>
+<text x="397" y="41" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="13" font-weight="400" fill="#71828E">프로젝트</text>
+<text x="502" y="41" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="13" font-weight="400" fill="#71828E">기록</text>
+<text x="1070" y="40" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">샘플 프로젝트 · 예시 데이터</text>
+<rect x="1287" y="18" width="120" height="34" rx="7" fill="#1B303D"/>
+<text x="1320" y="40" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="12" font-weight="400" fill="#FFFFFF">공유하기</text>
+<text x="32" y="98" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">WORKSPACE  /  조직 운영 시스템</text>
+<text x="32" y="138" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="28" font-weight="700" fill="#1B303D">프로젝트 타임라인</text>
+<text x="1190" y="132" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">마지막 갱신  11.18 14:30</text>
+<rect x="32" y="162" width="800" height="158" rx="12" fill="#FFFFFF" stroke="#D7E1E7"/>
+<text x="56" y="191" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="700" fill="#218A7A">PROJECT NORTH STAR</text>
+<text x="56" y="225" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="22" font-weight="700" fill="#1B303D">팀의 흐름을 한눈에, 필요한 판단은 제때</text>
+<text x="56" y="252" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="13" font-weight="400" fill="#71828E">목표  업무·자원·결정 정보를 연결한 운영 대시보드 첫 버전 완성</text>
+<text x="56" y="276" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="12" font-weight="400" fill="#71828E">성공 조건  팀원 5명 시험 운영 · 핵심 현황과 결정 요청을 쉽게 확인</text>
+<text x="56" y="300" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="12" font-weight="400" fill="#1B303D">최종 기한  2026.12.07     /     프로젝트 매니저  김민서</text>
+<rect x="852" y="162" width="556" height="158" rx="12" fill="#FFFFFF" stroke="#D7E1E7"/>
+<text x="876" y="192" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="14" font-weight="700" fill="#1B303D">지금 확인할 정보</text>
+<text x="876" y="229" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="24" font-weight="700" fill="#AD6A18">결정 대기 02</text>
+<text x="1082" y="229" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="24" font-weight="700" fill="#1B303D">진행 장애 01</text>
+<text x="876" y="259" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="13" font-weight="400" fill="#1B303D">11.19까지  시험 운영 범위 확정</text>
+<text x="876" y="283" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="12" font-weight="400" fill="#71828E">담당자 확인 필요  데이터 연결 작업</text>
+<text x="876" y="305" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="400" fill="#71828E">항목을 선택하면 관련 작업으로 이동</text>
+<text x="32" y="360" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="14" font-weight="700" fill="#1B303D">상세 보기  /  11.16 — 11.23</text>
+<rect x="550" y="350" width="6" height="6" rx="3" fill="#218A7A"/>
+<text x="563" y="358" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">완료</text>
+<rect x="625" y="350" width="6" height="6" rx="3" fill="#366AF0"/>
+<text x="638" y="358" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">진행 중</text>
+<rect x="715" y="350" width="6" height="6" rx="3" fill="#71828E"/>
+<text x="728" y="358" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">예정</text>
+<rect x="790" y="350" width="6" height="6" rx="3" fill="#AD6A18"/>
+<text x="803" y="358" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">결정 필요</text>
+<text x="1006" y="359" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="12" font-weight="400" fill="#366AF0">오늘로 이동</text>
+<rect x="1110" y="335" width="212" height="37" rx="8" fill="#FFFFFF" stroke="#D7E1E7"/>
+<text x="1127" y="359" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="18" font-weight="400" fill="#1B303D">−</text>
+<text x="1186" y="359" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="12" font-weight="400" fill="#366AF0">200%</text>
+<text x="1288" y="359" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="18" font-weight="400" fill="#1B303D">+</text>
+<text x="1340" y="359" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">전체 맞춤</text>
+<rect x="0" y="386" width="1440" height="563" rx="0" fill="#FFFFFF"/>
+<path d="M0 386 L1440 386" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<path d="M60 436 L60 933" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<path d="M60 427 L60 436" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<text x="44" y="416" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">11.16</text>
+<path d="M236 436 L236 933" fill="none" stroke="#EAF0F3" stroke-width="1" stroke-linecap="round"/>
+<path d="M236 427 L236 436" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<text x="220" y="416" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">11.17</text>
+<path d="M412 436 L412 933" fill="none" stroke="#EAF0F3" stroke-width="1" stroke-linecap="round"/>
+<path d="M412 427 L412 436" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<text x="396" y="416" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">11.18</text>
+<path d="M588 436 L588 933" fill="none" stroke="#EAF0F3" stroke-width="1" stroke-linecap="round"/>
+<path d="M588 427 L588 436" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<text x="572" y="416" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">11.19</text>
+<path d="M764 436 L764 933" fill="none" stroke="#EAF0F3" stroke-width="1" stroke-linecap="round"/>
+<path d="M764 427 L764 436" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<text x="748" y="416" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">11.20</text>
+<path d="M940 436 L940 933" fill="none" stroke="#EAF0F3" stroke-width="1" stroke-linecap="round"/>
+<path d="M940 427 L940 436" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<text x="924" y="416" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">11.21</text>
+<path d="M1116 436 L1116 933" fill="none" stroke="#EAF0F3" stroke-width="1" stroke-linecap="round"/>
+<path d="M1116 427 L1116 436" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<text x="1100" y="416" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">11.22</text>
+<path d="M1292 436 L1292 933" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<path d="M1292 427 L1292 436" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<text x="1276" y="416" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">11.23</text>
+<path d="M412 434 L412 933" fill="none" stroke="#366AF0" stroke-width="1.5" stroke-linecap="round"/>
+<rect x="382" y="391" width="66" height="26" rx="6" fill="#366AF0"/>
+<text x="391" y="409" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="400" fill="#FFFFFF">오늘 18일</text>
+<path d="M32 668 L1408 668" fill="none" stroke="#D7E1E7" stroke-width="3" stroke-linecap="round"/>
+<text x="32" y="643" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="400" fill="#71828E">현재 단계 / 화면 설계</text>
+<circle cx="60" cy="668" r="6" fill="white" stroke="#366AF0" stroke-width="2.5"/>
+<text x="38" y="698" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">설계 준비</text>
+<circle cx="412" cy="668" r="6" fill="white" stroke="#366AF0" stroke-width="2.5"/>
+<text x="390" y="698" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">화면 설계</text>
+<circle cx="1292" cy="668" r="6" fill="white" stroke="#366AF0" stroke-width="2.5"/>
+<text x="1270" y="698" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">개발 인계</text>
+<path d="M60 668 L60 583" fill="none" stroke="#218A7A" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="60" y="471" width="220" height="112" rx="10" fill="#FFFFFF" stroke="#D7E1E7"/>
+<rect x="60" y="484" width="3" height="20" rx="1" fill="#218A7A"/>
+<text x="76" y="494" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="700" fill="#218A7A">완료</text>
+<text x="76" y="519" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="15" font-weight="700" fill="#1B303D">요구사항 검토</text>
+<text x="76" y="541" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="400" fill="#71828E">11.16 — 11.18 · 김민서</text>
+<text x="76" y="565" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">작업·일정 표시 기준 정리</text>
+<path d="M60 594 L412 594" fill="none" stroke="#218A7A" stroke-width="4" stroke-linecap="round"/>
+<path d="M412 589 L412 599" fill="none" stroke="#218A7A" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M412 668 L412 583" fill="none" stroke="#366AF0" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="412" y="471" width="220" height="112" rx="10" fill="#FFFFFF" stroke="#D7E1E7"/>
+<rect x="412" y="484" width="3" height="20" rx="1" fill="#366AF0"/>
+<text x="428" y="494" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="700" fill="#366AF0">진행 중</text>
+<text x="428" y="519" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="15" font-weight="700" fill="#1B303D">타임라인 구조 설계</text>
+<text x="428" y="541" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="400" fill="#71828E">11.18 — 11.21 · 이서연</text>
+<text x="428" y="565" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">눈금·분기·정보 밀도 검토</text>
+<path d="M412 594 L940 594" fill="none" stroke="#366AF0" stroke-width="4" stroke-linecap="round"/>
+<path d="M940 589 L940 599" fill="none" stroke="#366AF0" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M412 668 L412 755" fill="none" stroke="#366AF0" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="412" y="755" width="220" height="112" rx="10" fill="#FFFFFF" stroke="#D7E1E7"/>
+<rect x="412" y="768" width="3" height="20" rx="1" fill="#366AF0"/>
+<text x="428" y="778" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="700" fill="#366AF0">진행 중</text>
+<text x="428" y="803" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="15" font-weight="700" fill="#1B303D">고정 정보 패널 설계</text>
+<text x="428" y="825" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="400" fill="#71828E">11.18 — 11.20 · 박지훈</text>
+<text x="428" y="849" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">목표와 결정 요청 표시</text>
+<path d="M412 878 L764 878" fill="none" stroke="#366AF0" stroke-width="4" stroke-linecap="round"/>
+<path d="M764 873 L764 883" fill="none" stroke="#366AF0" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M764 668 L764 583" fill="none" stroke="#71828E" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="764" y="471" width="220" height="112" rx="10" fill="#FFFFFF" stroke="#D7E1E7"/>
+<rect x="764" y="484" width="3" height="20" rx="1" fill="#71828E"/>
+<text x="780" y="494" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="700" fill="#71828E">예정</text>
+<text x="780" y="519" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="15" font-weight="700" fill="#1B303D">팀원 의견 수렴</text>
+<text x="780" y="541" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="400" fill="#71828E">11.20 — 11.22 · 김민서</text>
+<text x="780" y="565" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">시안 확인 후 주요 이견 정리</text>
+<path d="M764 594 L1116 594" fill="none" stroke="#71828E" stroke-width="4" stroke-linecap="round"/>
+<path d="M1116 589 L1116 599" fill="none" stroke="#71828E" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M940 668 L940 755" fill="none" stroke="#71828E" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="940" y="755" width="220" height="112" rx="10" fill="#FFFFFF" stroke="#D7E1E7"/>
+<rect x="940" y="768" width="3" height="20" rx="1" fill="#71828E"/>
+<text x="956" y="778" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="700" fill="#71828E">예정</text>
+<text x="956" y="803" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="15" font-weight="700" fill="#1B303D">시안 보완·개발 인계</text>
+<text x="956" y="825" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="400" fill="#71828E">11.21 — 11.23 · 이서연</text>
+<text x="956" y="849" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">화면 상태와 동작 기준 전달</text>
+<path d="M940 878 L1292 878" fill="none" stroke="#71828E" stroke-width="4" stroke-linecap="round"/>
+<path d="M1292 873 L1292 883" fill="none" stroke="#71828E" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M0 949 L1440 949" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
+<text x="32" y="985" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="11" font-weight="400" fill="#71828E">드래그하여 이동  ·  확대하면 세부 작업과 진행 정보 표시</text>
+<text x="780" y="985" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="10" font-weight="400" fill="#71828E">예시 데이터</text>
+<path d="M960 981 L1385 981" fill="none" stroke="#D7E1E7" stroke-width="3" stroke-linecap="round"/>
+<rect x="1100" y="975" width="105" height="12" rx="5" fill="#366AF0"/>
+</svg>
