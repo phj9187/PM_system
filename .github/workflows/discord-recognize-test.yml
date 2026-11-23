@@ -2,7 +2,7 @@ name: Discord recognize test
 
 # Bot이 볼 수 있는 텍스트 채널의 최근 메시지로 Gemini 인식을 시험하고,
 # 찾은 후보를 같은 Discord 채널에 올린다. 공개 실행 기록에는 개수만 남긴다.
-# Gemini 일시 오류(429·5xx)는 recognize.py가 다시 시도하고, 그래도 안 되면 다른 Flash 모델로 넘어간다.
+# Gemini 일시 오류(429·5xx)는 recognize.py가 다시 시도하고, 그래도 안 되면 다른 Flash 모델(3.5 우선)로 넘어간다.
 on:
   workflow_dispatch:
   push:
