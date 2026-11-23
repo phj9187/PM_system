@@ -234,6 +234,8 @@ def main(argv=None):
     s.add_argument('channel_id'); s.add_argument('project_id')
     s = sub.add_parser('create-project', help='프로젝트 채널 만들기(시험용)')
     s.add_argument('project_id'); s.add_argument('name')
+    s = sub.add_parser('recognize-test', help='최근 메시지로 Gemini 인식 시험, 후보를 같은 채널에 알림')
+    s.add_argument('--limit', type=int, default=50)
     s = sub.add_parser('poll', help='새 메시지 수집')
     s.add_argument('--once', action='store_true')
     s.add_argument('--interval', type=int, default=300)
@@ -281,6 +283,44 @@ def main(argv=None):
         elif a.cmd == 'create-project':
             print(Actions(client, state).handle({'action': 'channel.create', 'request_id': '',
                                                   'project_id': a.project_id, 'name': a.name}))
+        elif a.cmd == 'recognize-test':
+            from .recognize import RecognitionError, recognize
+            total = 0
+            for g in client.guilds() or []:
+                for ch in client.channels(g['id']) or []:
+                    if ch.get('type') != TEXT:
+                        continue
+                    try:
+                        raw = client.request('GET', f'/channels/{ch["id"]}/messages',
+                                             query={'limit': str(min(a.limit, 100))}) or []
+                    except DiscordError:
+                        continue
+                    raw = sorted(raw, key=lambda m: int(m['id']))
+                    msgs = [to_ingest_message(g['id'], ch['id'], m) for m in raw
+                            if not (m.get('author') or {}).get('bot') and (m.get('content') or '').strip()]
+                    if not msgs:
+                        continue
+                    batch = {'source': 'discord', 'guild_id': g['id'], 'channel_id': ch['id'],
+                             'project_id': 'test', 'batch_id': 'test', 'messages': msgs}
+                    try:
+                        result = recognize(batch, [])
+                    except RecognitionError as exc:
+                        print(f'인식 실패: {exc}', file=sys.stderr)
+                        return 1
+                    total += len(result['candidates'])
+                    print(f'채널 1개: 메시지 {len(msgs)}개, 후보 {len(result["candidates"])}개, '
+                          f'버린 후보 {len(result["skipped"])}개')
+                    lines = ['[인식 시험] 이 채널의 최근 대화에서 찾은 목표·작업 후보입니다. 아직 추가되지 않았습니다.']
+                    for c in result['candidates']:
+                        kind = '목표' if c['kind'] == 'goal' else '작업'
+                        extra = ', '.join(x for x in (c['fields']['due'] and f'기한 {c["fields"]["due"]}',
+                                                      c['fields']['owner_hint'] and f'담당 {c["fields"]["owner_hint"]}') if x)
+                        lines.append(f'- [{kind}] {c["title"]}' + (f' ({extra})' if extra else '')
+                                     + ' ' + ' '.join(f'<{e["url"]}>' for e in c['evidence'][:2]))
+                    if not result['candidates']:
+                        lines.append('- 찾은 후보가 없습니다.')
+                    client.send_message(ch['id'], '\n'.join(lines))
+            print(f'전체 후보 {total}개. 제목은 Discord 채널에 올렸습니다.')
         elif a.cmd == 'poll':
             collector = Collector(client, state)
             if a.ingest_url:
