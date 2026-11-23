@@ -253,7 +253,17 @@ def main(argv=None):
             for g in client.guilds() or []:
                 channels = [ch for ch in client.channels(g['id']) or [] if ch.get('type') in (TEXT, CATEGORY)]
                 if a.summary:
-                    print(f'- 서버 1개: 채널·카테고리 {len(channels)}개 확인')
+                    texts = [ch for ch in channels if ch.get('type') == TEXT]
+                    readable = with_messages = 0
+                    for ch in texts:  # 메시지 읽기 권한 시험. 내용은 출력하지 않는다.
+                        try:
+                            last = client.latest_message_id(ch['id'])
+                        except DiscordError:
+                            continue
+                        readable += 1
+                        with_messages += bool(last)
+                    print(f'- 서버 1개: 채널·카테고리 {len(channels)}개, 텍스트 채널 {len(texts)}개 중 '
+                          f'메시지 읽기 가능 {readable}개, 메시지가 있는 채널 {with_messages}개')
                     continue
                 print(f'- 서버 {g["name"]} (ID {g["id"]})')
                 for ch in channels:
