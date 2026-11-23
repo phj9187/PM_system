@@ -94,6 +94,27 @@ class RecognizeTests(unittest.TestCase):
         self.assertEqual(out['candidates'], [])
         self.assertEqual(t.calls, [])
 
+    def test_http_transport_retries_overload(self):
+        import io, urllib.error
+        from unittest import mock
+        from integrations.discord import recognize as r
+        ok = io.BytesIO(json.dumps({'candidates': []}).encode())
+        ok.status = 200
+        ok.__enter__ = lambda s=ok: s
+        ok.__exit__ = lambda *a: None
+        busy = urllib.error.HTTPError('u', 503, 'busy', {}, None)
+        waits = []
+        class Resp:
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self): return b'{"candidates": []}'
+        with mock.patch.object(r.urllib.request, 'urlopen', side_effect=[busy, busy, Resp()]):
+            self.assertEqual(r.http_transport({}, 'k', 'm', sleep=waits.append), {'candidates': []})
+        self.assertEqual(waits, [2, 4])
+        with mock.patch.object(r.urllib.request, 'urlopen', side_effect=[busy] * 4):
+            with self.assertRaises(RecognitionError):
+                r.http_transport({}, 'k', 'm', sleep=waits.append)
+
     def test_normalize_title(self):
         self.assertEqual(normalize_title(' 1차 발표 준비! '), normalize_title('1차발표준비'))
 

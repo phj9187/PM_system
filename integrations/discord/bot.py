@@ -320,7 +320,7 @@ def main(argv=None):
                     if not result['candidates']:
                         lines.append('- 찾은 후보가 없습니다.')
                     client.send_message(ch['id'], '\n'.join(lines))
-            print(f'전체 후보 {total}개. 제목은 Discord 채널에 올렸습니다.')
+            print(f'전체 후보 {total}개. 메시지가 있는 채널에는 결과를 올렸습니다.')
         elif a.cmd == 'poll':
             collector = Collector(client, state)
             if a.ingest_url:

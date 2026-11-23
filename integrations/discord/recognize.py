@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 import unicodedata
 import urllib.error
 import urllib.request
@@ -99,18 +100,36 @@ def build_request(batch: dict, items: list[dict]) -> dict:
     }
 
 
-def http_transport(body: dict, api_key: str, model: str, timeout: float = 60) -> dict:
-    """실제 Gemini REST 호출. 키는 헤더로만 보내고 오류 메시지에 넣지 않는다."""
-    request = urllib.request.Request(
-        GEMINI_URL.format(model=model), data=json.dumps(body).encode('utf-8'), method='POST',
-        headers={'Content-Type': 'application/json', 'x-goog-api-key': api_key})
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as resp:
-            return json.loads(resp.read())
-    except urllib.error.HTTPError as exc:
-        raise RecognitionError(f'Gemini 응답 오류 HTTP {exc.code}') from None
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        raise RecognitionError(f'Gemini 연결 실패: {type(exc).__name__}') from None
+RETRY_STATUS = (429, 500, 502, 503, 504)
+
+
+def http_transport(body: dict, api_key: str, model: str, timeout: float = 60,
+                   retries: int = 3, sleep: Callable[[float], None] = time.sleep) -> dict:
+    """실제 Gemini REST 호출. 키는 헤더로만 보내고 오류 메시지에 넣지 않는다.
+
+    과부하(503)·요청 한도(429) 같은 일시 오류는 2, 4, 8초 간격으로 다시 시도한다.
+    """
+    data = json.dumps(body).encode('utf-8')
+    for attempt in range(retries + 1):
+        request = urllib.request.Request(
+            GEMINI_URL.format(model=model), data=data, method='POST',
+            headers={'Content-Type': 'application/json', 'x-goog-api-key': api_key})
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            if exc.code in RETRY_STATUS and attempt < retries:
+                sleep(2 ** (attempt + 1))
+                continue
+            raise RecognitionError(f'Gemini 응답 오류 HTTP {exc.code}') from None
+        except (urllib.error.URLError, TimeoutError) as exc:
+            if attempt < retries:
+                sleep(2 ** (attempt + 1))
+                continue
+            raise RecognitionError(f'Gemini 연결 실패: {type(exc).__name__}') from None
+        except json.JSONDecodeError:
+            raise RecognitionError('Gemini 응답을 읽지 못했습니다.') from None
+    raise RecognitionError('Gemini 재시도 횟수 초과')
 
 
 def _response_json(response: dict) -> dict:
