@@ -105,7 +105,7 @@ def build_request(batch: dict, items: list[dict]) -> dict:
 RETRY_STATUS = (429, 500, 502, 503, 504)
 
 
-def http_transport(body: dict, api_key: str, model: str, timeout: float = 60,
+def http_transport(body: dict, api_key: str, model: str, timeout: float = 90,
                    retries: int = 3, sleep: Callable[[float], None] = time.sleep) -> dict:
     """실제 Gemini REST 호출. 키는 헤더로만 보내고 오류 메시지에 넣지 않는다.
 
@@ -131,10 +131,10 @@ def http_transport(body: dict, api_key: str, model: str, timeout: float = 60,
             err.status = exc.code
             raise err from None
         except (urllib.error.URLError, TimeoutError) as exc:
-            if attempt < retries:
-                sleep(2 ** (attempt + 1))
-                continue
-            raise RecognitionError(f'Gemini 연결 실패: {type(exc).__name__}') from None
+            # 응답이 느린 모델은 같은 모델로 다시 기다리지 않고 다음 모델로 넘긴다.
+            err = RecognitionError(f'Gemini 연결 실패 ({model}): {type(exc).__name__}')
+            err.status = 'timeout'
+            raise err from None
         except json.JSONDecodeError:
             raise RecognitionError('Gemini 응답을 읽지 못했습니다.') from None
     raise RecognitionError('Gemini 재시도 횟수 초과')
@@ -264,7 +264,7 @@ def recognize(batch: dict, items: list[dict], open_candidates: list[dict] = (), 
             response = transport(body, api_key, name)
         except RecognitionError as exc:
             # 과부하·한도·없는 모델이면 다음 모델로, 그 밖의 오류(키 문제 등)는 바로 멈춘다.
-            if getattr(exc, 'status', None) in RETRY_STATUS + (404,):
+            if getattr(exc, 'status', None) in RETRY_STATUS + (404, 'timeout'):
                 last_error = exc
                 continue
             raise
