@@ -224,7 +224,8 @@ def main(argv=None):
     sub = p.add_subparsers(dest='cmd', required=True)
     s = sub.add_parser('invite', help='서버 초대 주소 출력')
     s.add_argument('application_id')
-    sub.add_parser('check', help='Bot 연결과 볼 수 있는 서버·채널 확인')
+    s = sub.add_parser('check', help='Bot 연결과 볼 수 있는 서버·채널 확인')
+    s.add_argument('--summary', action='store_true', help='이름 없이 개수만 출력(공개 실행 기록용)')
     s = sub.add_parser('setup', help='사용할 서버와 카테고리 저장')
     s.add_argument('--guild', required=True)
     s.add_argument('--category', default=DEFAULT_CATEGORY)
@@ -247,12 +248,17 @@ def main(argv=None):
         if a.cmd == 'check':
             me = client.me()
             print(f'Bot 연결 성공: {me.get("username")}')
+            if a.summary:
+                print(f'서버 {len(client.guilds() or [])}개에 들어가 있음')
             for g in client.guilds() or []:
+                channels = [ch for ch in client.channels(g['id']) or [] if ch.get('type') in (TEXT, CATEGORY)]
+                if a.summary:
+                    print(f'- 서버 1개: 채널·카테고리 {len(channels)}개 확인')
+                    continue
                 print(f'- 서버 {g["name"]} (ID {g["id"]})')
-                for ch in client.channels(g['id']) or []:
-                    if ch.get('type') in (TEXT, CATEGORY):
-                        kind = '카테고리' if ch['type'] == CATEGORY else '채널'
-                        print(f'    {kind} {ch["name"]} (ID {ch["id"]})')
+                for ch in channels:
+                    kind = '카테고리' if ch['type'] == CATEGORY else '채널'
+                    print(f'    {kind} {ch["name"]} (ID {ch["id"]})')
         elif a.cmd == 'setup':
             state.data.update(guild_id=a.guild, category_name=a.category, category_id='',
                               notify_channel_id=a.notify_channel)

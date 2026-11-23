@@ -1,0 +1,43 @@
+name: Discord bot
+
+# 토큰은 저장소 Settings > Secrets and variables > Actions 의 DISCORD_BOT_TOKEN 에서만 읽는다.
+# 공개 저장소의 실행 기록은 누구나 볼 수 있으므로 서버·채널 이름과 대화 내용은 출력하지 않는다.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-hgnbgy]
+    paths:
+      - 'integrations/discord/**'
+      - 'tests/test_discord_*.py'
+      - '.github/workflows/discord-bot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -p 'test_discord_*.py' -v
+
+  check:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bot 연결 확인
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          if [ -z "$DISCORD_BOT_TOKEN" ]; then
+            echo "DISCORD_BOT_TOKEN 보안 비밀이 아직 없습니다. 연결 확인을 건너뜁니다."
+            exit 0
+          fi
+          python -m integrations.discord.bot check --summary
