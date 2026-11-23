@@ -18,6 +18,10 @@ from urllib.parse import parse_qs, urlsplit
 
 ROOT = Path(__file__).resolve().parent
 STATUSES = ('예정', '진행 중', '완료', '차단')
+# 앱 설치(PWA)에 필요한 화면 파일. 운영 데이터는 포함하지 않는다.
+PUBLIC_FILES = {'manifest.webmanifest': 'application/manifest+json; charset=utf-8',
+                'sw.js': 'text/javascript; charset=utf-8',
+                'icon.svg': 'image/svg+xml'}
 
 
 def initial_state():
@@ -162,6 +166,11 @@ def start_server(port=8765, data_path=None, token=None):
             if key and secrets.compare_digest(key, token):
                 self.reply(303, b'', headers={'Location': './', 'Set-Cookie':
                     f'pm_access={token}; Path=/; HttpOnly; SameSite=Lax'})
+                return
+            name = url.path.rsplit('/', 1)[-1]
+            if name in PUBLIC_FILES:
+                # 설치형 앱 파일은 데이터가 없어 접속 키 없이 제공한다.
+                self.reply(200, (ROOT/name).read_bytes(), PUBLIC_FILES[name])
                 return
             if not self.authorized():
                 self.reply(401, {'error': '코랩 출력에 표시된 전용 접속 링크로 다시 열어주세요.'})

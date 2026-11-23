@@ -10,7 +10,8 @@ def cell(kind, source):
     return out
 
 files = {f'dashboard/{name}': (ROOT/'dashboard'/name).read_text(encoding='utf-8')
-         for name in ('__init__.py','server.py','colab.py','index.html','app.js')}
+         for name in ('__init__.py','server.py','colab.py','index.html','app.js',
+                         'manifest.webmanifest','sw.js','icon.svg')}
 setup = '''from pathlib import Path
 import json, sys
 

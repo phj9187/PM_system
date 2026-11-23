@@ -13,7 +13,7 @@ function browser(storage=new Map()){
     addEventListener(){},showModal(){this.open=true},close(){this.open=false},
     click(){this.clicked=true},remove(){}});
   const document={getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id)},
-    createElement:node,querySelector:()=>node(),body:node()};
+    createElement:node,querySelector:()=>node(),querySelectorAll:()=>[],body:node()};
   const context=vm.createContext({document,location:{protocol:'file:',pathname:'/test/index.html',href:'file:///test/index.html'},
     localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},
     URL,Blob,Date,structuredClone,console,crypto:require('node:crypto').webcrypto,
@@ -48,4 +48,25 @@ test('로컬 모드에서도 잘못된 일정과 동시 수정은 기존 데이�
   const before=[...app.storage.values()][0];
   await assert.rejects(app.run(`request('state',{method:'POST',body:JSON.stringify({state,revision:0})})`));
   assert.equal([...app.storage.values()][0],before);
+});
+
+test('개인별 임무 창은 담당자별로 지연·진행·예정·완료 작업을 나눠 보여 준다',async()=>{
+  const app=browser();await Promise.resolve();
+  await app.run(`(async()=>{const next=structuredClone(state);
+    next.tasks.push({id:'a',title:'지연된 일',start:iso(today()-5),end:iso(today()-1),status:'진행 중',owner:'민지',note:'',goal:'',predecessor:''});
+    next.tasks.push({id:'b',title:'진행 일',start:iso(today()),end:iso(today()+2),status:'진행 중',owner:'민지',note:'메모',goal:'',predecessor:''});
+    next.tasks.push({id:'c',title:'다른 사람 일',start:iso(today()),end:iso(today()+2),status:'예정',owner:'준호',note:'',goal:'',predecessor:''});
+    next.tasks.push({id:'d',title:'미정 일',start:iso(today()),end:iso(today()+2),status:'완료',owner:'',note:'',goal:'',predecessor:''});
+    await save(next)})()`);
+  assert.equal(app.run('JSON.stringify(members())'),JSON.stringify(['민지','준호','']));
+  assert.equal(app.nodes.get('member').value,'민지');
+  assert.equal(app.nodes.get('mIssue').textContent,1);
+  assert.equal(app.nodes.get('mDoing').textContent,1);
+  assert.equal(app.nodes.get('mTodo').textContent,0);
+  const groups=app.nodes.get('missionList').children;
+  assert.equal(groups.length,2);
+  assert.equal(groups[0].children[1].children[0].textContent,'지연된 일');
+  app.nodes.get('member').value='준호';app.nodes.get('member').onchange({target:app.nodes.get('member')});
+  assert.equal(app.nodes.get('mTodo').textContent,1);
+  assert.equal([...app.storage.values()].includes("준호"),true);
 });

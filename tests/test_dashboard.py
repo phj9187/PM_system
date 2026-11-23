@@ -48,6 +48,13 @@ class DashboardTests(unittest.TestCase):
             script=client.open(base+'/app.js')
             self.assertIn('javascript',script.headers['Content-Type'])
             self.assertIn('function draw()',script.read().decode())
+            # 설치형 앱 파일은 접속 키 없이 열리고, 데이터 API는 여전히 막혀 있다.
+            manifest=urllib.request.urlopen(base+'/manifest.webmanifest')
+            self.assertIn('manifest+json',manifest.headers['Content-Type'])
+            self.assertEqual(json.load(manifest)['display'],'standalone')
+            self.assertIn('serviceWorker',client.open(base+'/app.js').read().decode())
+            self.assertIn("'/api/'",urllib.request.urlopen(base+'/sw.js').read().decode())
+            self.assertIn('image/svg+xml',urllib.request.urlopen(base+'/icon.svg').headers['Content-Type'])
             s=json.load(client.open(base+'/api/state')); s['project']['title']='HTTP 편집'
             s['goals']=[{'id':'g','title':'목표','due':'2026-12-01','done':False,'note':''}]
             req=urllib.request.Request(base+'/api/state',json.dumps({'state':s,'revision':0}).encode(),
