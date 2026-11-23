@@ -21,6 +21,8 @@ from typing import Callable
 
 GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
 DEFAULT_MODEL = 'gemini-flash-latest'
+# 기본 모델이 과부하·미지원일 때 차례로 시도할 모델. GEMINI_MODEL을 지정하면 그것만 쓴다.
+FALLBACK_MODELS = ('gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-2.5-flash-lite')
 KINDS = ('goal', 'task')
 MAX_TITLE = 200
 MAX_MESSAGES = 200
@@ -121,7 +123,13 @@ def http_transport(body: dict, api_key: str, model: str, timeout: float = 60,
             if exc.code in RETRY_STATUS and attempt < retries:
                 sleep(2 ** (attempt + 1))
                 continue
-            raise RecognitionError(f'Gemini 응답 오류 HTTP {exc.code}') from None
+            try:  # Google 오류 설명만 붙인다. 요청 내용과 키는 넣지 않는다.
+                detail = json.loads(exc.read() or b'{}').get('error', {}).get('message', '')[:200]
+            except (ValueError, AttributeError, OSError):
+                detail = ''
+            err = RecognitionError(f'Gemini 응답 오류 HTTP {exc.code} ({model})' + (f': {detail}' if detail else ''))
+            err.status = exc.code
+            raise err from None
         except (urllib.error.URLError, TimeoutError) as exc:
             if attempt < retries:
                 sleep(2 ** (attempt + 1))
@@ -245,8 +253,22 @@ def recognize(batch: dict, items: list[dict], open_candidates: list[dict] = (), 
     api_key = api_key or os.environ.get('GEMINI_API_KEY', '')
     if not api_key:
         raise RecognitionError('GEMINI_API_KEY가 설정되지 않았습니다.')
-    model = model or os.environ.get('GEMINI_MODEL') or DEFAULT_MODEL
+    model = model or os.environ.get('GEMINI_MODEL')
+    models = (model,) if model else FALLBACK_MODELS
     if not any(not m.get('deleted') for m in batch.get('messages', [])):
         return {'candidates': [], 'notes': [], 'skipped': []}
-    response = transport(build_request(batch, items), api_key, model)
-    return validate_result(_response_json(response), batch, items, open_candidates)
+    body = build_request(batch, items)
+    last_error = None
+    for name in models:
+        try:
+            response = transport(body, api_key, name)
+        except RecognitionError as exc:
+            # 과부하·한도·없는 모델이면 다음 모델로, 그 밖의 오류(키 문제 등)는 바로 멈춘다.
+            if getattr(exc, 'status', None) in RETRY_STATUS + (404,):
+                last_error = exc
+                continue
+            raise
+        result = validate_result(_response_json(response), batch, items, open_candidates)
+        result['model'] = name
+        return result
+    raise last_error or RecognitionError('사용할 수 있는 Gemini 모델이 없습니다.')

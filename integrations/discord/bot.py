@@ -308,7 +308,7 @@ def main(argv=None):
                         print(f'인식 실패: {exc}', file=sys.stderr)
                         return 1
                     total += len(result['candidates'])
-                    print(f'채널 1개: 메시지 {len(msgs)}개, 후보 {len(result["candidates"])}개, '
+                    print(f'채널 1개 (모델 {result.get("model", "")}): 메시지 {len(msgs)}개, 후보 {len(result["candidates"])}개, '
                           f'버린 후보 {len(result["skipped"])}개')
                     lines = ['[인식 시험] 이 채널의 최근 대화에서 찾은 목표·작업 후보입니다. 아직 추가되지 않았습니다.']
                     for c in result['candidates']:

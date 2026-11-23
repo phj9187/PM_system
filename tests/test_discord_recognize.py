@@ -115,6 +115,21 @@ class RecognizeTests(unittest.TestCase):
             with self.assertRaises(RecognitionError):
                 r.http_transport({}, 'k', 'm', sleep=waits.append)
 
+    def test_falls_back_to_next_model_on_overload(self):
+        tried = []
+        def transport(body, key, model):
+            tried.append(model)
+            if len(tried) == 1:
+                err = RecognitionError('busy'); err.status = 503; raise err
+            return fake({'candidates': [], 'notes': []})(body, key, model)
+        out = recognize(BATCH, ITEMS, api_key='k', transport=transport)
+        self.assertEqual(len(tried), 2)
+        self.assertEqual(out['model'], tried[1])
+        def denied(body, key, model):
+            err = RecognitionError('bad key'); err.status = 403; raise err
+        with self.assertRaises(RecognitionError):
+            recognize(BATCH, ITEMS, api_key='k', transport=denied)
+
     def test_normalize_title(self):
         self.assertEqual(normalize_title(' 1차 발표 준비! '), normalize_title('1차발표준비'))
 
