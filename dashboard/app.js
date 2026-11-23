@@ -6,7 +6,9 @@ const DAY=86400000, day=s=>Date.parse(s+'T00:00:00Z')/DAY, iso=n=>new Date(n*DAY
 const today=()=>{const d=new Date();return day(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))};
 const colors={'완료':'#218a7a','진행 중':'#366af0','예정':'#71828e','차단':'#a76313'};
 const localMode=location.protocol==='file:';
-const storageKey='rohang-dashboard-v1:'+location.pathname;
+const storageKey='pm-system-dashboard-v1:'+location.pathname;
+// 이름 변경 전 브라우저에 저장된 데이터를 한 번 옮겨 온다.
+const legacyStorageKey='roh'+'ang-dashboard-v1:'+location.pathname;
 const api=new URL('api/',location.href.endsWith('/')?location.href:location.href+'/');
 function initialState(){return {version:1,revision:0,project:{title:'새 프로젝트',purpose:'팀이 달성하려는 목적을 작성하세요.',success:'완료 여부를 확인할 기준을 작성하세요.',start:iso(today()-7),end:iso(today()+21)},goals:[],tasks:[],decisions:[]}}
 function validateState(s){
@@ -21,7 +23,7 @@ const horizon=[day(s.project.start),day(s.project.end),...s.tasks.flatMap(t=>[da
 for(const t of s.tasks){const seen=new Set([t.id]);let p=t.predecessor;while(p){if(!tasks.has(p)||seen.has(p))throw new Error('선행 작업이 없거나 순환 관계입니다.');seen.add(p);p=tasks.get(p).predecessor}if(t.predecessor&&t.start<tasks.get(t.predecessor).end)throw new Error('후속 작업 시작일은 선행 작업 종료일 이후여야 합니다.');if(t.goal&&!goals.has(t.goal))throw new Error('연결된 목표가 없습니다.')}
 return s;
 }
-function readLocal(){let raw;try{raw=localStorage.getItem(storageKey)}catch(_){throw new Error('브라우저 저장소를 사용할 수 없습니다. 코랩 실행 링크 또는 로컬 서버로 열어주세요.')}return raw?validateState(JSON.parse(raw)):initialState()}
+function readLocal(){let raw;try{raw=localStorage.getItem(storageKey)??localStorage.getItem(legacyStorageKey)}catch(_){throw new Error('브라우저 저장소를 사용할 수 없습니다. 코랩 실행 링크 또는 로컬 서버로 열어주세요.')}return raw?validateState(JSON.parse(raw)):initialState()}
 function el(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n}
 function toast(s){$('toast').textContent=s;$('toast').classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.add('hidden'),4500)}
 async function request(path,options={}){if(localMode){const current=readLocal();if(!options.method)return current;const body=JSON.parse(options.body);if(body.revision!==current.revision)throw new Error('다른 창에서 내용이 바뀌었습니다. 새로고침 후 다시 수정하세요.');const next=validateState(body.state);next.revision=current.revision+1;try{localStorage.setItem(storageKey,JSON.stringify(next))}catch(_){throw new Error('브라우저에 저장하지 못했습니다. 기존 데이터는 유지됩니다. 저장 공간과 설정을 확인하세요.')}return structuredClone(next)}let r;try{r=await fetch(new URL(path,api),options)}catch(_){throw new Error('실행 서버에 연결하지 못했습니다. 코랩 런타임과 대시보드 실행 셀을 확인하세요.')}let b;try{b=await r.json()}catch(_){throw new Error('대시보드 연결이 만료되었거나 올바른 실행 링크가 아닙니다. 코랩에서 새 링크를 생성하세요.')}if(!r.ok)throw new Error(b.error||'요청에 실패했습니다.');return b}
@@ -52,7 +54,7 @@ $('editProject').onclick=()=>openEditor('project');$('addGoal').onclick=()=>open
 $('export').onclick=()=>{if(!state){toast('먼저 대시보드를 불러와주세요.');return}if(!localMode){location.href=new URL('export',api).href;return}const url=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})),link=el('a');link.href=url;link.download='dashboard-backup.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)};$('import').onclick=()=>$('file').click();$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>2_000_000)throw new Error('2MB 이하의 백업 파일을 선택하세요.');const next=JSON.parse(await f.text());if(!confirm('현재 내용을 백업 파일의 내용으로 교체할까요? 필요하면 먼저 백업 저장을 누르세요.'))return;await save(next);toast('백업을 불러왔습니다.')}catch(err){toast(err.message)}finally{e.target.value=''}};
 if(localMode){document.querySelector('footer span:last-child').textContent='브라우저에 저장 · 백업 파일로 코랩에 옮기기';}
 // 앱 틀: 대시보드 창과 개인별 임무 창을 오가는 화면 전환. 팀 채팅은 앱 밖 Discord에서 한다.
-const VIEWS={dashboard:'dashboardView',missions:'missionView'},memberKey='rohang-member:'+location.pathname;
+const VIEWS={dashboard:'dashboardView',missions:'missionView'},memberKey='pm-system-member:'+location.pathname;
 function currentView(){const v=(location.hash||'').replace('#','');return Object.hasOwn(VIEWS,v)?v:'dashboard'}
 function showView(v){for(const [name,id] of Object.entries(VIEWS))$(id).classList.toggle('hidden',name!==v);$('dashboardActions').classList.toggle('hidden',v!=='dashboard');for(const t of document.querySelectorAll('.tab'))t.setAttribute('aria-current',t.dataset.view===v?'page':'false');if(v==='dashboard')draw();else renderMissions()}
 for(const t of document.querySelectorAll('.tab'))t.onclick=()=>{location.hash=t.dataset.view;showView(t.dataset.view)};

@@ -70,3 +70,11 @@ test('개인별 임무 창은 담당자별로 지연·진행·예정·완료 작
   assert.equal(app.nodes.get('mTodo').textContent,1);
   assert.equal([...app.storage.values()].includes("준호"),true);
 });
+
+test('이름 변경 전 키로 저장된 브라우저 데이터를 그대로 불러온다',async()=>{
+  const old=new Map([['roh'+'ang-dashboard-v1:/test/index.html',JSON.stringify({version:1,revision:3,project:{title:'이전 데이터',purpose:'',success:'',start:'2026-11-01',end:'2026-11-30'},goals:[],tasks:[],decisions:[]})]]);
+  const app=browser(old);await Promise.resolve();
+  assert.equal(app.nodes.get('projectTitle').textContent,'이전 데이터');
+  await app.run('save(structuredClone(state))');
+  assert.equal(app.storage.has('pm-system-dashboard-v1:/test/index.html'),true);
+});

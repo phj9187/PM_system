@@ -3,7 +3,7 @@
 <rect x="0" y="0" width="1440" height="68" rx="0" fill="#FFFFFF"/>
 <path d="M0 68 L1440 68" fill="none" stroke="#D7E1E7" stroke-width="1" stroke-linecap="round"/>
 <rect x="28" y="21" width="24" height="24" rx="7" fill="#218A7A"/>
-<text x="66" y="41" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="19" font-weight="700" fill="#1B303D">ROHANG</text>
+<text x="66" y="41" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="19" font-weight="700" fill="#1B303D">PM System</text>
 <text x="244" y="41" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="14" font-weight="700" fill="#366AF0">운영 대시보드</text>
 <text x="397" y="41" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="13" font-weight="400" fill="#71828E">프로젝트</text>
 <text x="502" y="41" font-family="Noto Sans KR, Malgun Gothic, sans-serif" font-size="13" font-weight="400" fill="#71828E">기록</text>

@@ -1,7 +1,7 @@
 {
-  "name": "ROHANG 조직 운영",
-  "short_name": "ROHANG",
-  "description": "의사결정과 실행·자원관리를 잇는 조직 운영 앱",
+  "name": "PM System 의사결정 보조",
+  "short_name": "PM System",
+  "description": "의사결정과 실행·자원관리를 잇는 범용 의사결정 보조 앱",
   "lang": "ko",
   "start_url": "./#dashboard",
   "scope": "./",

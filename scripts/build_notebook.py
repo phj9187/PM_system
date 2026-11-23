@@ -57,7 +57,7 @@ else:
 '''
 nb={'nbformat':4,'nbformat_minor':5,'metadata':{'colab':{'name':'PM_system.ipynb','provenance':[]},
     'kernelspec':{'display_name':'Python 3','name':'python3'},'language_info':{'name':'python'}},
-    'cells':[cell('markdown', '''# ROHANG · 동작하는 통합 대시보드
+    'cells':[cell('markdown', '''# PM System · 의사결정 보조 대시보드
 
 **런타임 → 모두 실행** 후 `별도 탭에서 대시보드 열기`를 누르세요. CPU만 있으면 됩니다.
 
