@@ -20,9 +20,9 @@ from datetime import date, datetime, timezone
 from typing import Callable
 
 GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
-DEFAULT_MODEL = 'gemini-flash-latest'
+DEFAULT_MODEL = 'gemini-3.5-flash'
 # 기본 모델이 과부하·미지원일 때 차례로 시도할 모델. GEMINI_MODEL을 지정하면 그것만 쓴다.
-FALLBACK_MODELS = ('gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-2.5-flash-lite')
+FALLBACK_MODELS = ('gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest')
 KINDS = ('goal', 'task')
 MAX_TITLE = 200
 MAX_MESSAGES = 200
