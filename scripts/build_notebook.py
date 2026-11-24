@@ -30,6 +30,9 @@ run = '''# 같은 런타임에서 재실행하면 기존 서버를 종료하고 
 if 'dashboard_server' in globals():
     dashboard_server.shutdown()
     dashboard_server.server_close()
+# 새 소스를 받은 뒤 다시 실행해도 이전에 불러온 코드가 남지 않게 한다.
+for _name in [m for m in sys.modules if m == 'dashboard' or m.startswith('dashboard.')]:
+    del sys.modules[_name]
 from dashboard.server import start_server
 from dashboard.colab import private_link, show_link
 
