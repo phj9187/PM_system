@@ -1,0 +1,32 @@
+name: Discord summarize
+
+# Bot이 읽을 수 있는 텍스트 채널의 전체 대화를 Gemini로 정리해,
+# 정리 글·워드 파일·추천 목표를 같은 Discord 채널에 올린다.
+# 공개 실행 기록에는 개수만 남기고, 워드 파일은 GitHub에 올리지 않는다.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-hgnbgy]
+    paths: ['.github/workflows/discord-summarize.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 대화 정리
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ] || [ -z "$DISCORD_BOT_TOKEN" ]; then
+            echo "보안 비밀이 없습니다. 건너뜁니다."
+            exit 0
+          fi
+          python -m integrations.discord.bot summarize-channel
