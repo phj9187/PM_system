@@ -74,13 +74,17 @@ class DiscordClient:
     def __repr__(self):  # 토큰이 출력되지 않게 한다.
         return 'DiscordClient(token=***)'
 
-    def request(self, method: str, path: str, *, query: dict | None = None, json_body=None):
+    def request(self, method: str, path: str, *, query: dict | None = None, json_body=None,
+                raw_body: bytes | None = None, content_type: str | None = None):
         url = API + path + ('?' + urllib.parse.urlencode(query) if query else '')
         headers = {'Authorization': f'Bot {self._token}', 'User-Agent': USER_AGENT}
         body = None
         if json_body is not None:
             headers['Content-Type'] = 'application/json'
             body = json.dumps(json_body, ensure_ascii=False).encode('utf-8')
+        elif raw_body is not None:
+            headers['Content-Type'] = content_type or 'application/octet-stream'
+            body = raw_body
         for attempt in range(self._max_retries + 1):
             status, resp_headers, data = self._transport(method, url, headers, body)
             if status == 429 and attempt < self._max_retries:
@@ -114,6 +118,20 @@ class DiscordClient:
         data = self.request('GET', f'/channels/{channel_id}/messages', query=query) or []
         return sorted(data, key=lambda m: int(m['id']))
 
+    def all_messages(self, channel_id: str, max_messages: int = 1000):
+        """채널의 메시지를 오래된 순으로 최대 max_messages개 돌려준다."""
+        out, before = [], None
+        while len(out) < max_messages:
+            query = {'limit': '100'}
+            if before:
+                query['before'] = before
+            page = self.request('GET', f'/channels/{channel_id}/messages', query=query) or []
+            out += page
+            if len(page) < 100:
+                break
+            before = min(page, key=lambda m: int(m['id']))['id']
+        return sorted(out[:max_messages], key=lambda m: int(m['id']))
+
     def latest_message_id(self, channel_id: str) -> str | None:
         data = self.request('GET', f'/channels/{channel_id}/messages', query={'limit': '1'}) or []
         return data[0]['id'] if data else None
@@ -134,6 +152,21 @@ class DiscordClient:
 
     def delete_channel(self, channel_id: str):
         return self.request('DELETE', f'/channels/{channel_id}')
+
+    def send_file(self, channel_id: str, content: str, filename: str, data: bytes,
+                  mime: str = 'application/octet-stream'):
+        """파일 하나를 첨부한 메시지를 보낸다(multipart/form-data)."""
+        boundary = 'pm-' + os.urandom(12).hex()
+        payload = json.dumps({'content': content[:2000], 'allowed_mentions': {'parse': []},
+                              'attachments': [{'id': 0, 'filename': filename}]}, ensure_ascii=False)
+        parts = [
+            f'--{boundary}\r\nContent-Disposition: form-data; name="payload_json"\r\n'
+            f'Content-Type: application/json\r\n\r\n{payload}\r\n'.encode('utf-8'),
+            f'--{boundary}\r\nContent-Disposition: form-data; name="files[0]"; '
+            f'filename="{filename}"\r\nContent-Type: {mime}\r\n\r\n'.encode('utf-8'),
+            data, f'\r\n--{boundary}--\r\n'.encode('utf-8')]
+        return self.request('POST', f'/channels/{channel_id}/messages', raw_body=b''.join(parts),
+                            content_type=f'multipart/form-data; boundary={boundary}')
 
     def send_message(self, channel_id: str, content: str):
         return self.request('POST', f'/channels/{channel_id}/messages', json_body={

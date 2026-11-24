@@ -236,6 +236,8 @@ def main(argv=None):
     s.add_argument('project_id'); s.add_argument('name')
     s = sub.add_parser('recognize-test', help='최근 메시지로 Gemini 인식 시험, 후보를 같은 채널에 알림')
     s.add_argument('--limit', type=int, default=50)
+    s = sub.add_parser('summarize-channel', help='채널 전체 대화를 정리해 워드 파일과 추천 목표를 채널에 올림')
+    s.add_argument('--channel', default='', help='채널 ID. 비우면 Bot이 읽을 수 있는 텍스트 채널 전부')
     s = sub.add_parser('poll', help='새 메시지 수집')
     s.add_argument('--once', action='store_true')
     s.add_argument('--interval', type=int, default=300)
@@ -321,6 +323,43 @@ def main(argv=None):
                         lines.append('- 찾은 후보가 없습니다.')
                     client.send_message(ch['id'], '\n'.join(lines))
             print(f'전체 후보 {total}개. 메시지가 있는 채널에는 결과를 올렸습니다.')
+        elif a.cmd == 'summarize-channel':
+            from .recognize import RecognitionError
+            from .summarize import build_docx, discord_messages, summarize, KST
+            from datetime import datetime
+            done = 0
+            for g in client.guilds() or []:
+                for ch in client.channels(g['id']) or []:
+                    if ch.get('type') != TEXT or (a.channel and ch['id'] != a.channel):
+                        continue
+                    try:
+                        raw = client.all_messages(ch['id'])
+                    except DiscordError:
+                        continue
+                    msgs = [to_ingest_message(g['id'], ch['id'], m) for m in raw
+                            if not (m.get('author') or {}).get('bot') and (m.get('content') or '').strip()]
+                    if not msgs:
+                        continue
+                    batch = {'source': 'discord', 'guild_id': g['id'], 'channel_id': ch['id'],
+                             'project_id': '', 'batch_id': f'summary:{ch["id"]}', 'messages': msgs}
+                    try:
+                        summary = summarize(batch)
+                    except RecognitionError as exc:
+                        print(f'정리 실패: {exc}', file=sys.stderr)
+                        return 1
+                    docx = build_docx(summary, f'#{ch.get("name", "")}')
+                    texts = discord_messages(summary)
+                    for text in texts[:-1]:
+                        client.send_message(ch['id'], text)
+                    stamp = datetime.now(KST).strftime('%Y%m%d-%H%M')
+                    client.send_file(ch['id'], texts[-1], f'대화정리-{stamp}.docx', docx,
+                                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+                    done += 1
+                    print(f'채널 1개 정리 (모델 {summary["model"]}): 메시지 {summary["message_count"]}개, '
+                          f'주제 {len(summary["topics"])}개, 합의 {len(summary["decisions"])}개, '
+                          f'추천 목표 {len(summary["goals"])}개, 할 일 {len(summary["tasks"])}개, '
+                          f'워드 파일 {len(docx) // 1024}KB')
+            print(f'정리한 채널 {done}개. 결과는 각 Discord 채널에 올렸습니다.')
         elif a.cmd == 'poll':
             collector = Collector(client, state)
             if a.ingest_url:
