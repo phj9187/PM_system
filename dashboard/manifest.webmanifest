@@ -3,7 +3,7 @@
   "short_name": "PM System",
   "description": "의사결정과 실행·자원관리를 잇는 범용 의사결정 보조 앱",
   "lang": "ko",
-  "start_url": "./#home",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f7fa",

@@ -8,6 +8,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import re
 import secrets
 import threading
 from datetime import date, timedelta
@@ -131,8 +132,62 @@ class Store:
             return self.read()
 
 
+PROJECT_ID = re.compile(r'^[A-Za-z0-9_-]{1,64}$')
+MAX_PROJECTS = 50
+
+
+class Projects:
+    """프로젝트마다 파일 하나(projects/<id>.json)로 저장한다.
+
+    이전 버전의 단일 파일(dashboard.json)이 있고 프로젝트가 없으면 첫 프로젝트로 옮긴다.
+    원본 파일은 지우지 않는다.
+    """
+    def __init__(self, directory, legacy=None):
+        self.dir = Path(directory)
+        self.lock = threading.RLock()
+        self.stores = {}
+        if self.dir.exists():
+            for f in sorted(self.dir.glob('*.json')):
+                if PROJECT_ID.match(f.stem):
+                    self.stores[f.stem] = Store(f)
+        if not self.stores and legacy and Path(legacy).exists():
+            pid = secrets.token_hex(6)
+            self.dir.mkdir(parents=True, exist_ok=True)
+            dest = self.dir/f'{pid}.json'
+            dest.write_text(Path(legacy).read_text(encoding='utf-8'), encoding='utf-8')
+            self.stores[pid] = Store(dest)
+
+    def list(self):
+        with self.lock:
+            items = [{'id': pid, 'state': store.read()} for pid, store in self.stores.items()]
+        return sorted(items, key=lambda x: (x['state']['project']['start'], x['state']['project']['title'], x['id']))
+
+    def get(self, pid):
+        with self.lock:
+            if not PROJECT_ID.match(pid or '') or pid not in self.stores:
+                raise LookupError('프로젝트를 찾을 수 없습니다. 목록에서 다시 선택하세요.')
+            return self.stores[pid]
+
+    def create(self, title=''):
+        with self.lock:
+            if len(self.stores) >= MAX_PROJECTS:
+                raise ValueError(f'프로젝트는 {MAX_PROJECTS}개까지 만들 수 있습니다.')
+            state = initial_state()
+            if title:
+                state['project']['title'] = title
+            pid = secrets.token_hex(6)
+            store = Store(self.dir/f'{pid}.json')
+            saved = store.save(state, 0)
+            self.stores[pid] = store
+            return {'id': pid, 'state': saved}
+
+
+API = re.compile(r'/api/projects(?:/([^/]+)/(state|export))?$')
+
+
 def start_server(port=8765, data_path=None, token=None):
-    store = Store(data_path or ROOT.parent/'data/private/dashboard.json')
+    legacy = Path(data_path or ROOT.parent/'data/private/dashboard.json')
+    projects = Projects(legacy.parent/'projects', legacy)
     token = token or secrets.token_urlsafe(24)
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -179,17 +234,25 @@ def start_server(port=8765, data_path=None, token=None):
                 self.reply(200, (ROOT/'index.html').read_bytes(), 'text/html; charset=utf-8')
             elif url.path in ('/app.js', '/dashboard/app.js'):
                 self.reply(200, (ROOT/'app.js').read_bytes(), 'text/javascript; charset=utf-8')
-            elif url.path.endswith('/api/state'):
-                self.reply(200, store.read())
-            elif url.path.endswith('/api/export'):
-                self.reply(200, store.read(), headers={'Content-Disposition': 'attachment; filename="dashboard-backup.json"'})
+            elif (m := API.search(url.path)):
+                try:
+                    if not m.group(1):
+                        self.reply(200, projects.list())
+                    elif m.group(2) == 'state':
+                        self.reply(200, projects.get(m.group(1)).read())
+                    else:
+                        self.reply(200, projects.get(m.group(1)).read(), headers={
+                            'Content-Disposition': 'attachment; filename="project-backup.json"'})
+                except LookupError as exc:
+                    self.reply(404, {'error': str(exc)})
             else:
                 self.reply(404, {'error': '찾을 수 없습니다.'})
 
         def do_POST(self):
             if not self.authorized():
                 self.reply(401, {'error': '접속 인증이 만료되었습니다.'}); return
-            if not urlsplit(self.path).path.endswith('/api/state'):
+            m = API.search(urlsplit(self.path).path)
+            if not m or m.group(2) == 'export':
                 self.reply(404, {'error': '찾을 수 없습니다.'}); return
             if self.headers.get('Content-Type','').split(';')[0].strip() != 'application/json':
                 self.reply(415, {'error': 'JSON 형식만 지원합니다.'}); return
@@ -198,7 +261,17 @@ def start_server(port=8765, data_path=None, token=None):
                 if length <= 0 or length > 2_000_000:
                     raise ValueError('저장할 데이터는 2MB 이하여야 합니다.')
                 body = json.loads(self.rfile.read(length))
-                self.reply(200, store.save(body['state'], body['revision']))
+                if not isinstance(body, dict):
+                    raise ValueError('요청 형식이 올바르지 않습니다.')
+                if m.group(1):
+                    self.reply(200, projects.get(m.group(1)).save(body['state'], body['revision']))
+                else:
+                    title = body.get('title', '')
+                    if not isinstance(title, str) or len(title) > 200:
+                        raise ValueError('프로젝트 제목은 200자 이하여야 합니다.')
+                    self.reply(200, projects.create(title.strip()))
+            except LookupError as exc:
+                self.reply(404, {'error': str(exc)})
             except RuntimeError as exc:
                 self.reply(409, {'error': str(exc)})
             except (ValueError, KeyError, TypeError) as exc:
@@ -209,7 +282,7 @@ def start_server(port=8765, data_path=None, token=None):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     server.access_token = token
-    server.store = store
+    server.projects = projects
     return server
 
 
@@ -220,7 +293,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     server = start_server(args.port)
     print(f'대시보드: http://127.0.0.1:{server.server_port}/?key={server.access_token}', flush=True)
-    print('종료: Ctrl+C. 데이터: data/private/dashboard.json', flush=True)
+    print('종료: Ctrl+C. 데이터: data/private/projects/', flush=True)
     try:
         threading.Event().wait()
     except KeyboardInterrupt:

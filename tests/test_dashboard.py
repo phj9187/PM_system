@@ -55,16 +55,40 @@ class DashboardTests(unittest.TestCase):
             self.assertIn('serviceWorker',client.open(base+'/app.js').read().decode())
             self.assertIn("'/api/'",urllib.request.urlopen(base+'/sw.js').read().decode())
             self.assertIn('image/svg+xml',urllib.request.urlopen(base+'/icon.svg').headers['Content-Type'])
-            s=json.load(client.open(base+'/api/state')); s['project']['title']='HTTP 편집'
+            # 이전 단일 파일이 없으면 프로젝트 목록은 비어 있고, 새 프로젝트를 만들어 편집한다.
+            self.assertEqual(json.load(client.open(base+'/api/projects')),[])
+            post=lambda path,body: client.open(urllib.request.Request(base+path,json.dumps(body).encode(),
+                                                                      {'Content-Type':'application/json'}))
+            created=json.load(post('/api/projects',{'title':'첫 프로젝트'}))
+            pid=created['id']
+            self.assertEqual(created['state']['revision'],1)
+            s=json.load(client.open(base+f'/api/projects/{pid}/state')); s['project']['title']='HTTP 편집'
             s['goals']=[{'id':'g','title':'목표','due':'2026-12-01','done':False,'note':''}]
-            req=urllib.request.Request(base+'/api/state',json.dumps({'state':s,'revision':0}).encode(),
-                                       {'Content-Type':'application/json'})
-            self.assertEqual(json.load(client.open(req))['revision'],1)
-            self.assertEqual(json.load(client.open(base+'/api/export'))['project']['title'],'HTTP 편집')
-            self.assertEqual(Store(self.path).read()['goals'][0]['title'],'목표')
+            self.assertEqual(json.load(post(f'/api/projects/{pid}/state',{'state':s,'revision':1}))['revision'],2)
+            with self.assertRaises(urllib.error.HTTPError) as exc:
+                post(f'/api/projects/{pid}/state',{'state':s,'revision':1})
+            self.assertEqual(exc.exception.code,409)
+            self.assertEqual(json.load(client.open(base+f'/api/projects/{pid}/export'))['project']['title'],'HTTP 편집')
+            for bad in ('missing','../x'):
+                with self.assertRaises(urllib.error.HTTPError) as exc:
+                    client.open(base+f'/api/projects/{bad}/state')
+                self.assertEqual(exc.exception.code,404)
+            json.load(post('/api/projects',{'title':'둘째'}))
+            self.assertEqual([p['state']['project']['title'] for p in json.load(client.open(base+'/api/projects'))].count('HTTP 편집'),1)
+            self.assertEqual(Store(self.path.parent/'projects'/f'{pid}.json').read()['goals'][0]['title'],'목표')
         finally:
             server.shutdown(); server.server_close()
 
+    def test_legacy_single_file_becomes_first_project(self):
+        store=Store(self.path); s=store.read(); s['project']['title']='이전 프로젝트'; store.save(s,0)
+        from dashboard.server import Projects
+        projects=Projects(self.path.parent/'projects',self.path)
+        listed=projects.list()
+        self.assertEqual(len(listed),1)
+        self.assertEqual(listed[0]['state']['project']['title'],'이전 프로젝트')
+        self.assertTrue(self.path.exists())
+        # 다시 열어도 한 번만 옮긴다.
+        self.assertEqual(len(Projects(self.path.parent/'projects',self.path).list()),1)
     def test_notebook_contains_current_sources_and_no_outputs(self):
         import ast
         root=Path(__file__).resolve().parents[1]
