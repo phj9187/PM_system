@@ -22,7 +22,7 @@ function browser(storage=new Map()){
   vm.runInContext(source,context);
   const run=code=>vm.runInContext(code,context);
   // 새 프로젝트를 만들고 그 프로젝트의 처음 시작 창으로 들어간다.
-  const open=async()=>{await new Promise(r=>setImmediate(r));const id=run('projects[0]?.id');if(id)await run(`go('home','${id}')`);else{await run(`$('newProject').onclick()`);await new Promise(r=>setImmediate(r))}};
+  const open=async()=>{await new Promise(r=>setImmediate(r));const id=run('projects[0]?.id');if(id)await run(`go('home','${id}')`);else{await run(`createProject('새 프로젝트')`);await new Promise(r=>setImmediate(r))}};
   return {context,nodes,storage,run,open};
 }
 
@@ -110,8 +110,8 @@ test('처음 시작 창은 두 하위 창의 요약과 지금 확인할 일을 �
 test('내 프로젝트 목록은 프로젝트마다 내 임무를 세고 내 작업이 있는 프로젝트를 먼저 보여 준다',async()=>{
   const app=browser(new Map([['pm-system-me:/test/index.html','민지']]));await settle();
   for(const [title,owner] of [['다른 팀 프로젝트','준호'],['내 프로젝트','민지']]){
-    await app.run(`$('newProject').onclick()`);await settle();
-    await app.run(`(async()=>{const next=structuredClone(state);next.project.title=${JSON.stringify(title)};
+    await app.run(`createProject(${JSON.stringify(title)})`);await settle();
+    await app.run(`(async()=>{const next=structuredClone(state);
       next.tasks.push({id:'t',title:'일',start:iso(today()),end:iso(today()+2),status:'진행 중',owner:${JSON.stringify(owner)},note:'',goal:'',predecessor:''});await save(next)})()`);
   }
   await app.run(`go('projects')`);await settle();
@@ -121,4 +121,29 @@ test('내 프로젝트 목록은 프로젝트마다 내 임무를 세고 내 작
   assert.equal(cards[0].children[3].children[0].children[0].textContent,'1');
   await cards[1].onclick();
   assert.equal(app.nodes.get('projectTitle').textContent,'다른 팀 프로젝트');
+});
+
+test('새 프로젝트는 이름을 받아 만들고, 같은 이름은 막으며, 프로젝트 안에서 목록으로 돌아갈 수 있다',async()=>{
+  const app=browser();await settle();
+  app.nodes.get('newProject').onclick();
+  assert.equal(app.nodes.get('newProjectDialog').open,true);
+  app.nodes.get('newProjectTitle').value='  ';
+  await app.nodes.get('newProjectForm').onsubmit({preventDefault(){}});
+  assert.match(app.nodes.get('newProjectError').textContent,/이름을 입력/);
+  app.nodes.get('newProjectTitle').value='첫째';
+  await app.nodes.get('newProjectForm').onsubmit({preventDefault(){}});
+  assert.equal(app.nodes.get('projectTitle').textContent,'첫째');
+  await app.nodes.get('backToProjects').onclick();
+  assert.equal(app.run('parseHash().view'),'projects');
+  app.nodes.get('newProject').onclick();app.nodes.get('newProjectTitle').value='첫째';
+  await app.nodes.get('newProjectForm').onsubmit({preventDefault(){}});
+  assert.match(app.nodes.get('newProjectError').textContent,/같은 이름/);
+  app.nodes.get('newProjectTitle').value='둘째';
+  await app.nodes.get('newProjectForm').onsubmit({preventDefault(){}});
+  await app.nodes.get('backToProjects').onclick();
+  assert.equal(app.run('projects.length'),2);
+  const titles=app.nodes.get('projectList').children.map(c=>c.children[1].textContent).sort();
+  assert.equal(JSON.stringify(titles),JSON.stringify(['둘째','첫째']));
+  await app.nodes.get('projectList').children.find(c=>c.children[1].textContent==='둘째').onclick();
+  assert.equal(app.nodes.get('projectTitle').textContent,'둘째');
 });

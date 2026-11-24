@@ -69,12 +69,12 @@ let projects=[],projectId=null;
 const VIEWS={projects:'projectsView',home:'homeView',dashboard:'dashboardView',missions:'missionView'},meKey='pm-system-me:'+location.pathname;
 function parseHash(){const [a,b]=(location.hash||'').replace('#','').split('/');if(!a||a==='projects')return {pid:null,view:'projects'};return {pid:decodeURIComponent(a),view:b&&b!=='projects'&&Object.hasOwn(VIEWS,b)?b:'home'}}
 function currentView(){return parseHash().view}
-function showView(v){for(const [name,id] of Object.entries(VIEWS))$(id).classList.toggle('hidden',name!==v);$('dashboardActions').classList.toggle('hidden',v!=='dashboard');$('projectTabs').classList.toggle('hidden',v==='projects');$('crumb').textContent=v==='projects'||!state?'':state.project.title;for(const t of document.querySelectorAll('.tab'))t.setAttribute('aria-current',t.dataset.view===v?'page':'false');if(v==='projects')renderProjects();else if(!state)return;else if(v==='dashboard')draw();else if(v==='missions')renderMissions();else renderHome()}
+function showView(v){for(const [name,id] of Object.entries(VIEWS))$(id).classList.toggle('hidden',name!==v);$('dashboardActions').classList.toggle('hidden',v!=='dashboard');$('projectTabs').classList.toggle('hidden',v==='projects');$('backToProjects').classList.toggle('hidden',v==='projects');$('crumb').textContent=v==='projects'||!state?'':state.project.title;for(const t of document.querySelectorAll('.tab'))t.setAttribute('aria-current',t.dataset.view===v?'page':'false');if(v==='projects')renderProjects();else if(!state)return;else if(v==='dashboard')draw();else if(v==='missions')renderMissions();else renderHome()}
 function go(v,pid=projectId){location.hash=v==='projects'?'projects':encodeURIComponent(pid)+'/'+v;return route()}
 async function route(){const {pid,view}=parseHash();if(!pid){projectId=null;state=undefined;showView('projects');return refreshProjects()}
 if(pid!==projectId||!state){projectId=pid;state=undefined;chosenMember=null;try{state=await request(statePath());render()}catch(e){toast(e.message);location.hash='projects';projectId=null;showView('projects');return refreshProjects()}}showView(view)}
 for(const t of document.querySelectorAll('.tab'))t.onclick=()=>go(t.dataset.view);
-$('brand').onclick=()=>go('projects');$('goDashboard').onclick=()=>go('dashboard');$('goMissions').onclick=()=>go('missions');
+$('brand').onclick=()=>go('projects');$('backToProjects').onclick=()=>go('projects');$('goDashboard').onclick=()=>go('dashboard');$('goMissions').onclick=()=>go('missions');
 if(typeof globalThis.addEventListener==='function')globalThis.addEventListener('hashchange',()=>route());
 function stat(n,label){const s=el('span');s.append(el('strong','',String(n)),label);return s}
 function me(){try{return (localStorage.getItem(meKey)||'').trim()}catch(_){return ''}}
@@ -86,7 +86,11 @@ const mine=p=>p.state.tasks.filter(t=>who&&(t.owner||'').trim()===who);const sor
 for(const p of sorted){const s=p.state,my=mine(p),late=new Set(lateTasks(s).map(t=>t.id)),b=el('button','entry project-card');b.append(el('span','eyebrow',s.project.start+' — '+s.project.end),el('b','',s.project.title),el('span','muted purpose-line',s.project.purpose));const st=el('span','entry-stats');if(who)st.append(stat(my.filter(t=>t.status!=='완료').length,'내 임무'),stat(my.filter(t=>late.has(t.id)).length,'내 지연·차단'));st.append(stat(s.decisions.filter(d=>!d.done).length,'결정 대기'),stat(s.tasks.length,'전체 작업'));b.append(st);b.onclick=()=>go('home',p.id);$('projectList').append(b)}
 if(!projects.length)$('projectList').append(el('p','muted','아직 프로젝트가 없습니다. 새 프로젝트를 만들어 시작하세요.'));$('projectsNote').textContent=who?who+' 님 기준으로 내 임무를 셉니다. 내 작업이 있는 프로젝트가 먼저 보입니다.':'내 이름을 입력하면 프로젝트마다 내 임무 수를 보여 줍니다.'}
 $('me').onchange=e=>{try{localStorage.setItem(meKey,e.target.value.trim())}catch(_){}renderProjects()};
-$('newProject').onclick=async()=>{try{const created=await request('projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:'새 프로젝트'})});projects.push(created);await go('home',created.id);openEditor('project')}catch(e){toast(e.message)}};
+// 새 프로젝트는 이름부터 받는다. 같은 이름이 이미 있으면 구별되도록 막는다.
+$('newProject').onclick=()=>{$('newProjectTitle').value='';$('newProjectError').textContent='';$('newProjectDialog').showModal()};
+$('newProjectCancel').onclick=()=>$('newProjectDialog').close();
+async function createProject(title){title=(title||'').trim();if(!title)throw new Error('프로젝트 이름을 입력하세요.');if(projects.some(p=>p.state.project.title.trim()===title))throw new Error('같은 이름의 프로젝트가 이미 있습니다. 다른 이름을 입력하세요.');const created=await request('projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})});projects.push(created);await go('home',created.id);return created}
+$('newProjectForm').onsubmit=async e=>{e.preventDefault();try{await createProject($('newProjectTitle').value);$('newProjectDialog').close();toast('프로젝트를 만들었습니다. 목적과 기간은 대시보드의 프로젝트 편집에서 바꿀 수 있습니다.')}catch(err){$('newProjectError').textContent=err.message}};
 // 처음 시작 창: 두 하위 창(대시보드·개인별 임무)으로 가는 입구와 지금 확인할 일.
 function renderHome(){if(!state)return;const p=state.project;$('homeTitle').textContent=p.title;$('homeMeta').textContent=p.start+' — '+p.end+' · 오늘 '+iso(today());
 const late=issues(),pending=state.decisions.filter(d=>!d.done);$('dashStats').replaceChildren(stat(state.goals.length,'목표'),stat(state.tasks.length,'작업'),stat(pending.length,'결정 대기'),stat(late.length,'지연·차단'));
