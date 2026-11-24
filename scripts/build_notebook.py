@@ -10,7 +10,8 @@ def cell(kind, source):
     return out
 
 files = {f'dashboard/{name}': (ROOT/'dashboard'/name).read_text(encoding='utf-8')
-         for name in ('__init__.py','server.py','colab.py','index.html','app.js')}
+         for name in ('__init__.py','server.py','colab.py','index.html','app.js',
+                         'manifest.webmanifest','sw.js','icon.svg')}
 setup = '''from pathlib import Path
 import json, sys
 
@@ -29,6 +30,9 @@ run = '''# 같은 런타임에서 재실행하면 기존 서버를 종료하고 
 if 'dashboard_server' in globals():
     dashboard_server.shutdown()
     dashboard_server.server_close()
+# 새 소스를 받은 뒤 다시 실행해도 이전에 불러온 코드가 남지 않게 한다.
+for _name in [m for m in sys.modules if m == 'dashboard' or m.startswith('dashboard.')]:
+    del sys.modules[_name]
 from dashboard.server import start_server
 from dashboard.colab import private_link, show_link
 
@@ -56,7 +60,7 @@ else:
 '''
 nb={'nbformat':4,'nbformat_minor':5,'metadata':{'colab':{'name':'PM_system.ipynb','provenance':[]},
     'kernelspec':{'display_name':'Python 3','name':'python3'},'language_info':{'name':'python'}},
-    'cells':[cell('markdown', '''# ROHANG · 동작하는 통합 대시보드
+    'cells':[cell('markdown', '''# PM System · 의사결정 보조 대시보드
 
 **런타임 → 모두 실행** 후 `별도 탭에서 대시보드 열기`를 누르세요. CPU만 있으면 됩니다.
 

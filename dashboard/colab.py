@@ -19,7 +19,7 @@ def public_link(server):
     from fastapi import Request
     from starlette.responses import Response
     with gr.Blocks(analytics_enabled=False) as demo:
-        gr.Markdown('ROHANG 대시보드 · 코랩 출력의 전용 접속 링크를 사용하세요.')
+        gr.Markdown('PM System 대시보드 · 코랩 출력의 전용 접속 링크를 사용하세요.')
     demo.launch(share=True, inline=False, prevent_thread_lock=True, quiet=True,
                 show_api=False)
 
