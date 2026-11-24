@@ -78,3 +78,18 @@ test('이름 변경 전 키로 저장된 브라우저 데이터를 그대로 불
   await app.run('save(structuredClone(state))');
   assert.equal(app.storage.has('pm-system-dashboard-v1:/test/index.html'),true);
 });
+
+test('처음 시작 창은 두 하위 창의 요약과 지금 확인할 일을 보여 주고 각 창으로 이동한다',async()=>{
+  const app=browser();await Promise.resolve();
+  await app.run(`(async()=>{const next=structuredClone(state);
+    next.tasks.push({id:'a',title:'지연된 일',start:iso(today()-5),end:iso(today()-1),status:'진행 중',owner:'민지',note:'',goal:'',predecessor:''});
+    next.decisions.push({id:'d',title:'예산 결정',due:iso(today()+3),done:false,note:''});await save(next)})()`);
+  assert.equal(app.run('currentView()'),'home');
+  assert.equal(app.nodes.get('missionEntryTitle').textContent,'민지 님의 임무');
+  const todo=app.nodes.get('homeTodo').children.map(b=>b.children[0].textContent);
+  assert.equal(JSON.stringify(todo),JSON.stringify(['지연된 일','예산 결정']));
+  app.nodes.get('homeTodo').children[1].onclick();
+  assert.equal(app.nodes.get('editor').open,true);
+  app.nodes.get('goMissions').onclick();
+  assert.equal(app.run('location.hash'),'missions');
+});
