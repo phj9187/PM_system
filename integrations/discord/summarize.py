@@ -145,7 +145,7 @@ def summarize(batch: dict, items: list[dict] = (), open_candidates: list[dict] =
         'goals': [c for c in checked['candidates'] if c['kind'] == 'goal'],
         'tasks': [c for c in checked['candidates'] if c['kind'] == 'task'],
         'open_questions': [_text(q, 500) for q in data.get('open_questions') or [] if _text(q)],
-        # 능동형 검증의 첫 단계: 사람이 확인할 "확인 필요" 항목. 근거 메시지가 없는 것은 버린다.
+        # 하위 기능인 능동형 SE 검증의 첫 단계: 사람이 확인할 "확인 필요" 항목. 근거 메시지가 없는 것은 버린다.
         'conflicts': [{'kind': c.get('kind') if c.get('kind') in CONFLICT_KINDS else 'decision',
                        'status': 'needs_review', 'summary': _text(c.get('summary'), 500),
                        'item_ids': [i for i in c.get('item_ids') or [] if i in item_ids],
