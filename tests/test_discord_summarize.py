@@ -16,6 +16,9 @@ RESULT = {
               {'title': '1차 발표 준비', 'confidence': 0.9, 'evidence_message_ids': ['m1']}],
     'tasks': [{'title': '자료 수집', 'owner_hint': '가상팀원B', 'confidence': 0.8, 'evidence_message_ids': ['m2']}],
     'open_questions': ['발표 장소'],
+    'conflicts': [{'kind': 'timeline', 'summary': '대화는 금요일 초안, 앱 목표 기한은 12월 5일',
+                   'item_ids': ['g1', 'nope'], 'evidence_message_ids': ['m1']},
+                  {'kind': 'weird', 'summary': '근거 없는 충돌', 'evidence_message_ids': ['zz']}],
 }
 
 
@@ -44,6 +47,15 @@ class SummarizeTests(unittest.TestCase):
         msgs = discord_messages(out)
         self.assertTrue(all(len(m) <= 1900 for m in msgs))
         self.assertIn('추천 목표', ''.join(msgs))
+
+    def test_conflicts_need_evidence_and_show_as_needs_review(self):
+        out = summarize(BATCH, ITEMS, api_key='k', transport=fake(RESULT))
+        self.assertEqual(len(out['conflicts']), 1)
+        c = out['conflicts'][0]
+        self.assertEqual((c['kind'], c['status'], c['item_ids']), ('timeline', 'needs_review', ['g1']))
+        self.assertIn('확인 필요', ''.join(discord_messages(out)))
+        with zipfile.ZipFile(io.BytesIO(build_docx(out))) as z:
+            self.assertIn('확인 필요', z.read('word/document.xml').decode('utf-8'))
 
 
 if __name__ == '__main__':

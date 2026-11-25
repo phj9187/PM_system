@@ -30,6 +30,10 @@ SYSTEM_PROMPT = """너는 팀 운영 앱의 회의록 정리 단계다.
    existing_items에 같은 뜻의 목표가 있으면 넣지 않는다.
 5. tasks: 담당자나 기한이 정해진 할 일.
 6. open_questions: 아직 결정되지 않아 다시 논의해야 할 것.
+7. conflicts: 서로 맞지 않는 내용. 대화 안에서 앞뒤가 다른 결정·기한·담당, 또는 existing_items(앱에 있는 목표·작업)와
+   대화가 다른 것(예: 대화에서 기한을 미루자고 했는데 앱 기한은 그대로, 끝났다는 작업이 앱에선 진행 중).
+   kind는 timeline(기한·일정), owner(담당), scope(범위·목표), status(진행 상태), decision(결정끼리) 중 하나.
+   판단하지 말고 무엇이 어떻게 다른지만 적고, 근거 메시지 id와 관련 앱 항목 id를 단다. 없으면 빈 배열.
 모르는 값은 지어내지 말고 빈 문자열로 둔다. 날짜는 메시지 시각을 기준으로 YYYY-MM-DD로 계산한다.
 evidence_message_ids에는 근거가 된 메시지 id만 넣는다. JSON 스키마에 맞춰서만 답한다."""
 
@@ -55,8 +59,13 @@ RESPONSE_SCHEMA = {
         'goals': {'type': 'ARRAY', 'items': _ITEM},
         'tasks': {'type': 'ARRAY', 'items': _ITEM},
         'open_questions': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
+        'conflicts': {'type': 'ARRAY', 'items': {'type': 'OBJECT', 'properties': {
+            'kind': {'type': 'STRING'}, 'summary': {'type': 'STRING'},
+            'item_ids': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
+            'evidence_message_ids': {'type': 'ARRAY', 'items': {'type': 'STRING'}}},
+            'required': ['kind', 'summary', 'evidence_message_ids']}},
     },
-    'required': ['title', 'overview', 'topics', 'decisions', 'goals', 'tasks', 'open_questions'],
+    'required': ['title', 'overview', 'topics', 'decisions', 'goals', 'tasks', 'open_questions', 'conflicts'],
 }
 
 
@@ -90,6 +99,10 @@ def call_gemini(body: dict, api_key: str, model: str | None, transport: Callable
     raise last or RecognitionError('사용할 수 있는 Gemini 모델이 없습니다.')
 
 
+CONFLICT_KINDS = ('timeline', 'owner', 'scope', 'status', 'decision')
+CONFLICT_LABELS = {'timeline': '일정', 'owner': '담당', 'scope': '범위', 'status': '진행 상태', 'decision': '결정'}
+
+
 def _text(v, limit=2000):
     return v.strip()[:limit] if isinstance(v, str) else ''
 
@@ -106,6 +119,7 @@ def summarize(batch: dict, items: list[dict] = (), open_candidates: list[dict] =
     data, used = call_gemini(build_request(batch, list(items)), api_key,
                              model or os.environ.get('GEMINI_MODEL'), transport)
     by_id = {m['id']: m for m in batch['messages']}
+    item_ids = {i.get('id') for i in items if i.get('id')}
 
     def ev(ids):
         return [{'message_id': i, 'url': by_id[i].get('url', '')}
@@ -131,6 +145,13 @@ def summarize(batch: dict, items: list[dict] = (), open_candidates: list[dict] =
         'goals': [c for c in checked['candidates'] if c['kind'] == 'goal'],
         'tasks': [c for c in checked['candidates'] if c['kind'] == 'task'],
         'open_questions': [_text(q, 500) for q in data.get('open_questions') or [] if _text(q)],
+        # 능동형 검증의 첫 단계: 사람이 확인할 "확인 필요" 항목. 근거 메시지가 없는 것은 버린다.
+        'conflicts': [{'kind': c.get('kind') if c.get('kind') in CONFLICT_KINDS else 'decision',
+                       'status': 'needs_review', 'summary': _text(c.get('summary'), 500),
+                       'item_ids': [i for i in c.get('item_ids') or [] if i in item_ids],
+                       'evidence': ev(c.get('evidence_message_ids'))}
+                      for c in data.get('conflicts') or []
+                      if isinstance(c, dict) and _text(c.get('summary')) and ev(c.get('evidence_message_ids'))],
         'message_count': len(batch['messages']),
         'period': (batch['messages'][0].get('created_at', ''), batch['messages'][-1].get('created_at', '')),
         'skipped': checked['skipped'],
@@ -192,7 +213,9 @@ def build_docx(summary: dict, channel_label: str = '') -> bytes:
     sections = [('합의된 사항', [(d['decision'], d['evidence']) for d in summary['decisions']]),
                 ('추천 목표 (팀이 정한 목표)', [(_item_line(g), g['evidence']) for g in summary['goals']]),
                 ('할 일', [(_item_line(t), t['evidence']) for t in summary['tasks']]),
-                ('남은 질문', [(q, []) for q in summary['open_questions']])]
+                ('남은 질문', [(q, []) for q in summary['open_questions']]),
+                ('확인 필요 (서로 맞지 않는 내용)', [(_conflict_line(c), c['evidence'])
+                                          for c in summary.get('conflicts', [])])]
     for heading, rows in sections:
         body.append(_h(heading))
         if not rows:
@@ -228,6 +251,10 @@ def build_docx(summary: dict, channel_label: str = '') -> bytes:
     return buf.getvalue()
 
 
+def _conflict_line(c):
+    return f'[{CONFLICT_LABELS.get(c["kind"], "결정")}] {c["summary"]}'
+
+
 def _item_line(c):
     extra = ', '.join(x for x in (c['fields'].get('due') and f'기한 {c["fields"]["due"]}',
                                   c['fields'].get('owner_hint') and f'담당 {c["fields"]["owner_hint"]}') if x)
@@ -251,6 +278,9 @@ def discord_messages(summary: dict, limit: int = 1900) -> list[str]:
         lines += ['', '**할 일**'] + [f'- {_item_line(t)}' for t in summary['tasks']]
     if summary['open_questions']:
         lines += ['', '**남은 질문**'] + [f'- {q}' for q in summary['open_questions']]
+    if summary.get('conflicts'):
+        lines += ['', '**확인 필요** (서로 맞지 않는 내용입니다. 어느 쪽이 맞는지 정해 주세요)']
+        lines += [f'- {_conflict_line(c)} <{c["evidence"][0]["url"]}>' for c in summary['conflicts']]
     pieces = []
     for line in lines:
         pieces += [line[i:i + limit] for i in range(0, len(line), limit)] or ['']

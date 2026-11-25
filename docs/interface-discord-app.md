@@ -69,6 +69,24 @@
 
 모든 기록은 `target_id`로 소속 목표·작업을 가진다. 그 항목의 상세 창에 시간순으로 쌓인다. 추가만 하고 덮어쓰지 않는다.
 
+## 3-1. 앱 내부: 확인 필요 (충돌)
+
+능동형 SE 검증 시스템의 첫 단계다. Gemini가 대화 안의 모순, 또는 대화와 앱 항목(existing_items)이 다른 것을 찾아
+"확인 필요"로 낸다. 판단과 수정은 사람이 한다. 근거 메시지가 없는 항목은 버린다.
+
+```json
+{
+  "kind": "timeline | owner | scope | status | decision",
+  "status": "needs_review",
+  "summary": "대화는 기한을 12월 19일로 미뤘는데 앱 목표 기한은 12월 12일",
+  "item_ids": ["앱 목표·작업 id"],
+  "evidence": [{"message_id": "...", "url": "https://discord.com/channels/..."}]
+}
+```
+
+지금은 Discord 정리 결과(`summarize`)에만 담긴다. 앱 서버 관문이 생기면 ingest 응답에 같은 형식으로 붙이고,
+앱은 사람이 "맞음/해결함"을 고르면 status를 resolved로 바꾼다.
+
 ## 4. 앱 → Discord: 알림
 
 ```json
