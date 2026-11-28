@@ -13,7 +13,7 @@ def make(detail=False):
     def line(x,y,x2,y2,c='line',w=1):
         s.append(f'<path d="M{x} {y} L{x2} {y2}" fill="none" stroke="{C.get(c,c)}" stroke-width="{w}" stroke-linecap="round"/>')
     rect(0,0,1440,1020,'bg');rect(0,0,1440,68,'white');line(0,68,1440,68)
-    rect(28,21,24,24,'teal',7);text(66,41,'ROHANG',19,'ink',700)
+    rect(28,21,24,24,'teal',7);text(66,41,'PM System',19,'ink',700)
     text(244,41,'운영 대시보드',14,'blue',700);text(397,41,'프로젝트',13,'muted');text(502,41,'기록',13,'muted')
     text(1070,40,'샘플 프로젝트 · 예시 데이터',11,'muted');rect(1287,18,120,34,'ink',7);text(1320,40,'공유하기',12,'white')
     text(32,98,'WORKSPACE  /  조직 운영 시스템',11,'muted');text(32,138,'프로젝트 타임라인',28,'ink',700)
