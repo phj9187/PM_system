@@ -10,8 +10,12 @@ def cell(kind, source):
     return out
 
 files = {f'dashboard/{name}': (ROOT/'dashboard'/name).read_text(encoding='utf-8')
-         for name in ('__init__.py','server.py','colab.py','index.html','app.js',
+         for name in ('__init__.py','server.py','inbox.py','colab.py','index.html','app.js',
                          'manifest.webmanifest','sw.js','icon.svg')}
+# Discord 제안함이 쓰는 정리 모듈(표준 라이브러리만 사용).
+files.update({f'integrations/{name}': (ROOT/'integrations'/name).read_text(encoding='utf-8')
+              for name in ('__init__.py','discord/__init__.py','discord/client.py','discord/recognize.py',
+                           'discord/summarize.py','discord/bot.py')})
 setup = '''from pathlib import Path
 import json, sys
 
@@ -31,8 +35,22 @@ if 'dashboard_server' in globals():
     dashboard_server.shutdown()
     dashboard_server.server_close()
 # 새 소스를 받은 뒤 다시 실행해도 이전에 불러온 코드가 남지 않게 한다.
-for _name in [m for m in sys.modules if m == 'dashboard' or m.startswith('dashboard.')]:
+for _name in [m for m in sys.modules if m.split('.')[0] in ('dashboard', 'integrations')]:
     del sys.modules[_name]
+# Discord 제안함(선택): 코랩 왼쪽 열쇠 아이콘(보안 비밀)에 DISCORD_BOT_TOKEN과 GEMINI_API_KEY를 넣고
+# 이 노트북에 접근을 허용하면 켜집니다. 값은 화면·파일·백업에 남기지 않습니다.
+import os
+try:
+    from google.colab import userdata
+    for _key in ('DISCORD_BOT_TOKEN', 'GEMINI_API_KEY'):
+        try:
+            os.environ[_key] = userdata.get(_key)
+        except Exception:
+            pass
+except ImportError:
+    pass
+print('Discord 제안함:', '켜짐' if os.environ.get('DISCORD_BOT_TOKEN') and os.environ.get('GEMINI_API_KEY')
+      else '꺼짐 (보안 비밀 없음)')
 from dashboard.server import start_server
 from dashboard.colab import private_link, show_link
 
@@ -45,6 +63,11 @@ public = '''# 공개 링크가 필요할 때만 아래 값을 True로 바꾸고 
 # 설치는 내 PC가 아니라 Colab의 임시 실행 환경에서만 이루어집니다.
 PUBLIC_LINK = False
 if PUBLIC_LINK:
+    # 공개 링크를 켜면 링크 소지자 누구나 접속하므로 Discord·Gemini 비밀 값은 서버에서 내린다.
+    import os
+    for _key in ('DISCORD_BOT_TOKEN', 'GEMINI_API_KEY'):
+        os.environ.pop(_key, None)
+    print('공개 링크 사용 중에는 Discord 제안함 가져오기를 끕니다.')
     import subprocess
     subprocess.run([sys.executable, '-m', 'pip', 'install', '-q',
                     'gradio==5.49.1', 'huggingface-hub<1.0'], check=True)
@@ -68,6 +91,7 @@ nb={'nbformat':4,'nbformat_minor':5,'metadata':{'colab':{'name':'PM_system.ipynb
 - 목표·작업·결정 요청 추가 / 수정 / 삭제
 - 실제 날짜에 비례한 가지형 타임라인, 드래그 이동, 확대·축소
 - 자동 파일 저장, JSON 백업 저장·불러오기
+- Discord 제안함(선택): 연결한 채널의 대화에서 Gemini가 찾은 목표·할 일을 띄우고, 사람이 추가/거절
 
 기본 실행에는 패키지를 설치하지 않습니다. 선택 셀에서 공개 링크를 켜는 경우에만 Colab에 Gradio를 설치합니다.
 **코랩은 상시 서버가 아닙니다. 런타임 초기화 시 저장 파일도 사라질 수 있으므로 백업을 내려받으세요.**

@@ -71,8 +71,8 @@ function parseHash(){const [a,b]=(location.hash||'').replace('#','').split('/');
 function currentView(){return parseHash().view}
 function showView(v){for(const [name,id] of Object.entries(VIEWS))$(id).classList.toggle('hidden',name!==v);$('dashboardActions').classList.toggle('hidden',v!=='dashboard');$('projectTabs').classList.toggle('hidden',v==='projects');$('backToProjects').classList.toggle('hidden',v==='projects');$('crumb').textContent=v==='projects'||!state?'':state.project.title;for(const t of document.querySelectorAll('.tab'))t.setAttribute('aria-current',t.dataset.view===v?'page':'false');if(v==='projects')renderProjects();else if(!state)return;else if(v==='dashboard')draw();else if(v==='missions')renderMissions();else renderHome()}
 function go(v,pid=projectId){location.hash=v==='projects'?'projects':encodeURIComponent(pid)+'/'+v;return route()}
-async function route(){const {pid,view}=parseHash();if(!pid){projectId=null;state=undefined;showView('projects');return refreshProjects()}
-if(pid!==projectId||!state){projectId=pid;state=undefined;chosenMember=null;try{state=await request(statePath());render()}catch(e){toast(e.message);location.hash='projects';projectId=null;showView('projects');return refreshProjects()}}showView(view)}
+async function route(){const {pid,view}=parseHash();if(!pid){projectId=null;state=undefined;clearTimeout(inboxTimer);showView('projects');return refreshProjects()}
+if(pid!==projectId||!state){projectId=pid;state=undefined;chosenMember=null;inbox=null;seenProposed=null;renderInbox();try{state=await request(statePath());render();loadInbox()}catch(e){toast(e.message);location.hash='projects';projectId=null;showView('projects');return refreshProjects()}}showView(view)}
 for(const t of document.querySelectorAll('.tab'))t.onclick=()=>go(t.dataset.view);
 $('brand').onclick=()=>go('projects');$('backToProjects').onclick=()=>go('projects');$('goDashboard').onclick=()=>go('dashboard');$('goMissions').onclick=()=>go('missions');
 if(typeof globalThis.addEventListener==='function')globalThis.addEventListener('hashchange',()=>route());
@@ -105,4 +105,27 @@ function renderMissions(){if(!state)return;const list=members(),sel=$('member'),
 $('member').onchange=e=>{chosenMember=e.target.value;renderMissions()};
 // 설치형 앱(PWA). 파일 직접 실행이나 지원하지 않는 브라우저에서는 건너뛴다.
 if(!localMode&&globalThis.navigator&&'serviceWorker' in navigator&&globalThis.isSecureContext)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+// Discord 제안함: 대화에서 Gemini가 찾은 목표·할 일을 띄우고, 사람이 추가/거절한다.
+let inbox=null,inboxTimer=null,inboxPid=null,seenProposed=null;
+const inboxPath=()=>'projects/'+encodeURIComponent(projectId)+'/inbox';
+const post=(path,body)=>request(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+function kst(s){if(!s)return '';const d=new Date(s);return isNaN(d)?s:d.toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+async function loadInbox(){if(localMode||!projectId){inbox=null;renderInbox();return}const pid=projectId;try{const data=await request(inboxPath());if(pid!==projectId)return;setInbox(data)}catch(e){$('chatStatus').textContent=e.message}scheduleInbox()}
+function setInbox(data){inbox=data;const proposed=inbox.candidates.filter(c=>c.status==='proposed');if(seenProposed!==null&&inboxPid===projectId){const fresh=proposed.filter(c=>!seenProposed.has(c.id));if(fresh.length)toast('Discord 대화에서 새 제안 '+fresh.length+'개를 찾았습니다. 처음 창에서 추가할지 정해 주세요.')}seenProposed=new Set(proposed.map(c=>c.id));inboxPid=projectId;renderInbox()}
+function scheduleInbox(){clearTimeout(inboxTimer);if(localMode||!projectId)return;inboxTimer=setTimeout(loadInbox,inbox&&inbox.syncing?3000:30000)}
+function renderInbox(){const panel=$('inboxPanel'),setup=$('discordSetup');if(!panel)return;if(localMode||!inbox){panel.classList.add('hidden');setup.classList.add('hidden');$('chatStatus').textContent=localMode?'파일 직접 실행에서는 연결할 수 없습니다':'연결 전';return}
+panel.classList.remove('hidden');setup.classList.remove('hidden');if(document.activeElement!==$('channelId'))$('channelId').value=inbox.channel_id;
+const status=!inbox.discord_ready?'앱 서버에 Discord·Gemini 보안 비밀이 없습니다':!inbox.channel_id?'채널 연결 전':inbox.syncing?'가져오는 중… (1~2분)':inbox.last_error?'가져오기 실패: '+inbox.last_error:inbox.last_sync?'연결됨 · 마지막 확인 '+kst(inbox.last_sync)+' · 10분마다 새 대화 확인':'연결됨 · 아직 가져오기 전';$('chatStatus').textContent=status;$('chatLink').textContent='팀 채팅 · Discord ('+(inbox.channel_id?'연결됨':'연결 전')+')';$('syncDiscord').disabled=!!inbox.syncing;
+const proposed=inbox.candidates.filter(c=>c.status==='proposed').sort((a,b)=>(a.kind===b.kind?0:a.kind==='task'?-1:1)||(a.fields.due||'9').localeCompare(b.fields.due||'9'));$('inboxCount').textContent=proposed.length;const list=$('inboxList');list.replaceChildren();
+for(const c of proposed){const row=el('div','cand'),info=el('div');info.append(el('b','',c.title));const f=c.fields||{},meta=[f.due&&'기한 '+f.due,f.owner_hint&&'담당 '+f.owner_hint].filter(Boolean).join(' · ');if(meta)info.append(el('div','meta',meta));if(f.description)info.append(el('div','meta',f.description));for(const e of (c.evidence||[]).slice(0,2)){if(!/^https:\/\/discord\.com\//.test(e.url||''))continue;const a=el('a','','대화 보기');a.href=e.url;a.target='_blank';a.rel='noopener';info.append(a,document.createTextNode(' '))}
+const acts=el('div','acts'),ok=el('button','primary','추가'),no=el('button','','거절');ok.onclick=()=>decide(c,'accept');no.onclick=()=>decide(c,'reject');acts.append(ok,no);row.append(el('span','kind'+(c.kind==='goal'?' goal':''),c.kind==='goal'?'목표':'할 일'),info,acts);list.append(row)}
+if(!proposed.length)list.append(el('p','muted',inbox.channel_id?'지금 확인할 제안이 없습니다.':'Discord 채널을 연결하면 대화에서 찾은 할 일이 여기에 뜹니다.'));
+const handled=inbox.candidates.filter(c=>c.status!=='proposed').slice(-3).reverse();for(const c of handled)list.append(el('div','done-line',(c.status==='accepted'?'추가함 · ':'거절함 · ')+c.title));
+const cl=$('conflictList');cl.replaceChildren();inbox.conflicts.forEach((c,i)=>{if(c.status==='resolved')return;const box=el('div','conflict');box.append(el('b','','확인 필요 · '),document.createTextNode(c.summary+' '));const ev=(c.evidence||[])[0];if(ev&&/^https:\/\/discord\.com\//.test(ev.url)){const a=el('a','','대화 보기');a.href=ev.url;a.target='_blank';a.rel='noopener';box.append(a,document.createTextNode(' '))}const done=el('button','','확인함');done.onclick=async()=>{try{setInbox(await post(inboxPath(),{action:'resolve_conflict',index:i}))}catch(e){toast(e.message)}};box.append(done);cl.append(box)});
+const n=proposed.length,alert=$('discordAlert');if(alert){alert.classList.toggle('hidden',!n);alert.textContent='Discord 제안 '+n+'개 · 처음 창에서 추가할지 정하기'}}
+async function decide(c,action){try{const r=await post(inboxPath(),{action,id:c.id});seenProposed?.delete(c.id);setInbox(r.inbox);if(r.state){state=r.state;render()}toast(action==='accept'?(c.kind==='goal'?'목표':'작업')+'로 추가했습니다: '+c.title:'거절했습니다. 같은 제안은 다시 뜨지 않습니다.')}catch(e){toast(e.message);loadInbox()}}
+$('linkChannel').onclick=async()=>{const v=$('channelId').value.trim().replace(/^.*\/(\d+)\/?$/,'$1');try{setInbox(await post(inboxPath(),{action:'link',channel_id:v}));toast(v?'채널을 연결했습니다. 지금 가져오기를 누르거나 10분 뒤 자동 확인을 기다리세요.':'채널 연결을 해제했습니다.')}catch(e){toast(e.message)}};
+$('syncDiscord').onclick=async()=>{try{setInbox(await post(inboxPath(),{action:'sync'}));scheduleInbox()}catch(e){toast(e.message)}};
+$('discordAlert').onclick=()=>go('home');
 route();

@@ -37,6 +37,17 @@
 - 응답 `202 {"accepted": n, "queued": n}`. Bot은 2xx를 받은 뒤에만 채널 커서를 옮긴다.
 - Bot 메시지와 빈 메시지는 Bot이 미리 뺀다.
 
+
+### 1-1. 앱 서버 구현 (dashboard/inbox.py)
+
+- `POST /api/projects/<프로젝트 id>/ingest/discord` : Bot이 위 묶음을 보낸다. `Authorization: Bearer <PM_INGEST_SECRET>`.
+  비밀 값이 서버에 없으면 이 창구는 닫혀 있다. 앱 서버가 Gemini로 정리해 목표·할 일 후보(proposed)로 저장한다.
+- 앱 서버에 `DISCORD_BOT_TOKEN`·`GEMINI_API_KEY`가 있으면 앱이 연결된 채널을 직접 읽는다(지금 가져오기 버튼, 10분마다 자동 확인).
+  새 메시지가 없으면 Gemini를 부르지 않는다. 코랩에서는 보안 비밀로 넣고, 공개 링크를 켜면 두 값은 내린다.
+- 화면: `GET /api/projects/<id>/inbox`, `POST /api/projects/<id>/inbox` `{action: link|sync|accept|reject|resolve_conflict}`.
+  추가(accept)를 눌러야 대시보드 목표·작업이 되고, 메모에 근거 메시지 링크가 남는다. 거절한 제안은 다시 뜨지 않는다.
+- 후보 파일: `data/private/inbox/<프로젝트 id>.json` (Git 제외).
+
 ## 2. 앱 내부: 목표·작업 후보
 
 ```json

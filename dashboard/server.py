@@ -11,11 +11,14 @@ import os
 import re
 import secrets
 import threading
+import time
 from datetime import date, timedelta
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
+
+from .inbox import Inbox
 
 ROOT = Path(__file__).resolve().parent
 STATUSES = ('예정', '진행 중', '완료', '차단')
@@ -182,12 +185,14 @@ class Projects:
             return {'id': pid, 'state': saved}
 
 
-API = re.compile(r'/api/projects(?:/([^/]+)/(state|export))?$')
+API = re.compile(r'/api/projects(?:/([^/]+)/(state|export|inbox))?$')
+INGEST = re.compile(r'/api/projects/([^/]+)/ingest/discord$')
 
 
-def start_server(port=8765, data_path=None, token=None):
+def start_server(port=8765, data_path=None, token=None, auto_sync=True):
     legacy = Path(data_path or ROOT.parent/'data/private/dashboard.json')
     projects = Projects(legacy.parent/'projects', legacy)
+    inbox = Inbox(legacy.parent/'inbox', projects)
     token = token or secrets.token_urlsafe(24)
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -240,6 +245,8 @@ def start_server(port=8765, data_path=None, token=None):
                         self.reply(200, projects.list())
                     elif m.group(2) == 'state':
                         self.reply(200, projects.get(m.group(1)).read())
+                    elif m.group(2) == 'inbox':
+                        self.reply(200, inbox.view(m.group(1)))
                     else:
                         self.reply(200, projects.get(m.group(1)).read(), headers={
                             'Content-Disposition': 'attachment; filename="project-backup.json"'})
@@ -248,11 +255,20 @@ def start_server(port=8765, data_path=None, token=None):
             else:
                 self.reply(404, {'error': '찾을 수 없습니다.'})
 
+        def ingest_authorized(self):
+            # Bot → 앱: 서버 보안 비밀 PM_INGEST_SECRET을 Bearer로 보낸다. 없으면 이 창구는 닫혀 있다.
+            secret = os.environ.get('PM_INGEST_SECRET', '')
+            sent = self.headers.get('Authorization', '').removeprefix('Bearer ').strip()
+            return bool(secret) and secrets.compare_digest(sent, secret)
+
         def do_POST(self):
-            if not self.authorized():
+            ingest = INGEST.search(urlsplit(self.path).path)
+            if ingest and not self.ingest_authorized():
+                self.reply(401, {'error': '수신 비밀 값이 맞지 않습니다.'}); return
+            if not ingest and not self.authorized():
                 self.reply(401, {'error': '접속 인증이 만료되었습니다.'}); return
-            m = API.search(urlsplit(self.path).path)
-            if not m or m.group(2) == 'export':
+            m = ingest or API.search(urlsplit(self.path).path)
+            if not m or (not ingest and m.group(2) == 'export'):
                 self.reply(404, {'error': '찾을 수 없습니다.'}); return
             if self.headers.get('Content-Type','').split(';')[0].strip() != 'application/json':
                 self.reply(415, {'error': 'JSON 형식만 지원합니다.'}); return
@@ -263,7 +279,11 @@ def start_server(port=8765, data_path=None, token=None):
                 body = json.loads(self.rfile.read(length))
                 if not isinstance(body, dict):
                     raise ValueError('요청 형식이 올바르지 않습니다.')
-                if m.group(1):
+                if ingest:
+                    self.reply(200, {'added': inbox.ingest_batch(m.group(1), body)})
+                elif m.group(2) == 'inbox':
+                    self.reply(200, self.inbox_action(m.group(1), body))
+                elif m.group(1):
                     self.reply(200, projects.get(m.group(1)).save(body['state'], body['revision']))
                 else:
                     title = body.get('title', '')
@@ -278,11 +298,30 @@ def start_server(port=8765, data_path=None, token=None):
                 self.reply(400, {'error': str(exc)})
             except OSError:
                 self.reply(500, {'error': '저장 공간에 기록하지 못했습니다. 백업을 내려받고 다시 시도하세요.'})
+            except Exception as exc:  # Discord·Gemini 오류
+                self.reply(502, {'error': str(exc)[:300]})
+
+        def inbox_action(self, pid, body):
+            action = body.get('action')
+            if action == 'link':
+                return inbox.link(pid, body.get('channel_id', ''))
+            if action == 'sync':
+                inbox.sync_in_background(pid)
+                time.sleep(0.2)
+                return inbox.view(pid)
+            if action in ('accept', 'reject'):
+                return inbox.decide(pid, body.get('id', ''), action)
+            if action == 'resolve_conflict':
+                return inbox.resolve_conflict(pid, body.get('index'))
+            raise ValueError('알 수 없는 요청입니다.')
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     server.access_token = token
     server.projects = projects
+    server.inbox = inbox
+    if auto_sync:
+        inbox.start_auto_sync()
     return server
 
 
